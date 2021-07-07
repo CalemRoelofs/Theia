@@ -26,7 +26,7 @@ class Server(models.Model):
     server_profile = models.ForeignKey("Server Profile", ServerProfile)
 
 
-class ScanResults(models.Model):
+class ProfileChangelog(models.Model):
     server_profile = models.ForeignKey("Server Profile", ServerProfile)
     date_modified = models.DateTimeField("Date Modified")
     changed_field = models.CharField("Changed Field", max_length=255)
