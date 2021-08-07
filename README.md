@@ -22,4 +22,4 @@ Theia is going to fulfil a number of roles:
         - Telegram
         - Email with SMTP
 
-The basic idea is to have an application in place that not only tracks what infrastructure is in place, but also maintains historic records of certain changes that happen to that infrastructure for auditing at a alter date, or alerting administrators immediately of something unexpected.
+The basic idea is to have an application in place that not only tracks what infrastructure is in place, but also maintains historic records of certain changes that happen to that infrastructure for auditing at a later date, or alerting administrators immediately of something unexpected.
