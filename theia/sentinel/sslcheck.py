@@ -1,16 +1,14 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # requires a recent enough python with idna support in socket
 # pyopenssl, cryptography and idna
-
-from OpenSSL import SSL
-from cryptography import x509
-from cryptography.x509.oid import NameOID
+from collections import namedtuple
 from datetime import datetime
+from socket import socket
 
 import idna
-
-from socket import socket
-from collections import namedtuple
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from OpenSSL import SSL
 
 HostInfo = namedtuple(field_names="cert hostname peername", typename="HostInfo")
 

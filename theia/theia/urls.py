@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """theia URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -16,6 +17,4 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-]
+urlpatterns = [path("admin/", admin.site.urls)]

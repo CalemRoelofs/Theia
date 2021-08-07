@@ -1,17 +1,20 @@
-from celery import shared_task
-from sentinel.models import Server, ProfileChangelog
+# -*- coding: utf-8 -*-
 import subprocess
-
-from typing import Dict, List
 from datetime import datetime
+from typing import Dict
+from typing import List
 
-import nmap3
-import dns.resolver
 import dns.exception
+import dns.resolver
+import nmap3
 import requests
-
-
-from sslcheck import get_certificate, get_common_name, get_issuer, get_alt_names
+from celery import shared_task
+from sentinel.models import ProfileChangelog
+from sentinel.models import Server
+from sslcheck import get_alt_names
+from sslcheck import get_certificate
+from sslcheck import get_common_name
+from sslcheck import get_issuer
 
 
 @shared_task
