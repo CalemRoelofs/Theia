@@ -12,7 +12,7 @@ repos:
     rev: 19.3b0
     hooks:
     -   id: black  
--   repo: https://github.com/PyCQA/isort
-    rev: 5.9.3
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v2.6.0
     hooks:
-    -   id: isort
+    -   id: reorder-python-imports
