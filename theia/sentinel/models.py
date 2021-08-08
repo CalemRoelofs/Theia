@@ -30,7 +30,7 @@ class ServerProfile(models.Model):
     class Meta:
         verbose_name = "ServerProfile"
 
-    server = models.OneToOneField(Server, on_delete=models.CASCADE, primary_key=False)
+    server = models.OneToOneField(Server, on_delete=models.CASCADE, primary_key=True)
     is_up = models.BooleanField("Host Reachable", null=False, blank=False)
     open_ports = models.JSONField("Open Ports", null=True, blank=True)
     security_headers = models.JSONField("Security Headers", null=True, blank=True)
@@ -46,7 +46,7 @@ class ProfileChangelog(models.Model):
     class Meta:
         verbose_name = "ProfileChangelog"
 
-    server_profile = models.ForeignKey("ServerProfile", ServerProfile)
+    server = models.ForeignKey(Server, on_delete=models.CASCADE)
     date_modified = models.DateTimeField("Date Modified")
     changed_field = models.CharField("Changed Field", max_length=255)
     old_value = models.JSONField("Old Value", null=True, blank=True)
