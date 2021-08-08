@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import subprocess
 from datetime import datetime
+from datetime import timedelta
 
 import dns.exception
 import dns.resolver
@@ -8,6 +9,7 @@ import nmap3
 import requests
 from celery import shared_task
 from celery.utils.log import get_task_logger
+from pytz import timezone
 from requests.exceptions import SSLError
 from requests.models import HTTPError
 
@@ -20,18 +22,22 @@ from .sslcheck import get_issuer
 
 
 logger = get_task_logger(__name__)
+tz = timezone("Europe/Dublin")
 
 
 @shared_task(name="port_scan", serializer="json")
 def port_scan(server_id: int):
-    server = Server.objects.get(id=server_id)
 
+    server = Server.objects.get(id=server_id)
+    logger.info(f"Got server {server.name}")
     nmap = nmap3.Nmap()
     # Aggressively scan (-T4) all 65535 ports (-p-)
     results = nmap.scan_top_ports(server.ip_address, args="-T4 -p-")
-    if not results[server.ip_address]:
-        raise RuntimeError(f"Could not find host {server.ip_address} in nmap scan!")
 
+    if not results[server.ip_address]:
+        logger.critical(f"Could not find host {server.ip_address} in nmap scan!")
+        return None
+    logger.info(f"Succesfully scanned {server.ip_address}")
     open_ports = [
         p["portid"] for p in results[server.ip_address]["ports"] if p["state"] == "open"
     ]
@@ -41,9 +47,10 @@ def port_scan(server_id: int):
         # If there's no change don't do anything
         pass
     else:
+        logger.info(f"Detected change, creating new changelog")
         log = ProfileChangelog(
             server=server,
-            date_modified=datetime.now(),
+            date_modified=datetime.now(tz),
             changed_field="open_ports",
             old_value=server.serverprofile.open_ports,
             new_value=open_ports,
@@ -51,7 +58,7 @@ def port_scan(server_id: int):
         log.save()
         server.serverprofile.open_ports = open_ports
         server.save()
-    return None
+    return open_ports
 
 
 @shared_task(name="dns_records", serializer="json")
@@ -86,7 +93,7 @@ def dns_records(server_id: int):
     else:
         log = ProfileChangelog(
             server=server,
-            date_modified=datetime.now(),
+            date_modified=datetime.now(tz),
             changed_field="dns_records",
             old_value=server.serverprofile.dns_records,
             new_value=dns_results,
@@ -94,7 +101,7 @@ def dns_records(server_id: int):
         log.save()
         server.serverprofile.dns_records = dns_results
         server.save()
-    return None
+    return dns_results
 
 
 @shared_task(name="ssl_certs", serializer="json")
@@ -109,7 +116,7 @@ def ssl_certs(server_id: int):
         "not_after": hostinfo.cert.not_valid_after,
         "expired": not (
             hostinfo.cert.not_valid_before
-            < datetime.now()
+            < datetime.now(tz)
             < hostinfo.cert.not_valid_after
         ),
     }
@@ -120,7 +127,7 @@ def ssl_certs(server_id: int):
     else:
         log = ProfileChangelog(
             server=server,
-            date_modified=datetime.now(),
+            date_modified=datetime.now(tz),
             changed_field="ssl_certs",
             old_value=server.serverprofile.ssl_certs,
             new_value=ssl_results,
@@ -128,7 +135,7 @@ def ssl_certs(server_id: int):
         log.save()
         server.serverprofile.ssl_certs = ssl_results
         server.save()
-    return None
+    return ssl_results
 
 
 @shared_task(name="get_headers", serializer="json")
@@ -157,7 +164,7 @@ def get_headers(server_id: int):
         logger.info("Updating headers!")
         log = ProfileChangelog(
             server=server,
-            date_modified=datetime.now(),
+            date_modified=datetime.now(tz),
             changed_field="ssl_certs",
             old_value=server.serverprofile.security_headers,
             new_value=response.headers,
@@ -165,7 +172,7 @@ def get_headers(server_id: int):
         log.save()
         server.serverprofile.security_headers = response.headers
         server.save()
-    return None
+    return response.headers
 
 
 @shared_task(name="ping")
