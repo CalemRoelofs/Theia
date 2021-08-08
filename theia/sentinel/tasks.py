@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 import subprocess
 from datetime import datetime
-from typing import Dict
-from typing import List
 
 import dns.exception
 import dns.resolver
 import nmap3
 import requests
 from celery import shared_task
-from sentinel.models import ProfileChangelog
-from sentinel.models import Server
-from sslcheck import get_alt_names
-from sslcheck import get_certificate
-from sslcheck import get_common_name
-from sslcheck import get_issuer
+from celery.utils.log import get_task_logger
+from requests.exceptions import SSLError
+from requests.models import HTTPError
+
+from .models import ProfileChangelog
+from .models import Server
+from .sslcheck import get_alt_names
+from .sslcheck import get_certificate
+from .sslcheck import get_common_name
+from .sslcheck import get_issuer
 
 
-@shared_task
-def port_scan(server: Server):
+@shared_task(name="port_scan", serializer="json")
+def port_scan(server_id: int):
+    server = Server.objects.get(id=server_id)
     nmap = nmap3.Nmap()
     # Aggressively scan (-T4) all 65535 ports (-p-)
     results = nmap.scan_top_ports(server.ip_address, args="-T4 -p-")
@@ -44,10 +47,12 @@ def port_scan(server: Server):
         log.save()
         server.server_profile.open_ports = open_ports
         server.save()
+    return None
 
 
-@shared_task
-def dns_records(server: Server):
+@shared_task(name="dns_records", serializer="json")
+def dns_records(server_id: int):
+    server = Server.objects.get(id=server_id)
     dns_results = {
         "A": [],
         "CNAME": [],
@@ -85,10 +90,12 @@ def dns_records(server: Server):
         log.save()
         server.server_profile.dns_records = dns_results
         server.save()
+    return None
 
 
-@shared_task
-def ssl_certs(server: Server):
+@shared_task(name="ssl_certs", serializer="json")
+def ssl_certs(server_id: int):
+    server = Server.objects.get(id=server_id)
     hostinfo = get_certificate(server.domain_name, 443)
     ssl_results = {
         "common_name": get_common_name(hostinfo.cert),
@@ -117,14 +124,33 @@ def ssl_certs(server: Server):
         log.save()
         server.server_profile.ssl_certs = ssl_results
         server.save()
+    return None
 
 
-@shared_task
-def get_headers(server: Server):
-    response = requests.get(f"https://{server.domain_name}")
+@shared_task(name="get_headers", serializer="json")
+def get_headers(server_id: int):
+    logger = get_task_logger(__name__)
+    logger.info(f"Task started, getting server_ID {server_id}")
+    print("Started task!")
+    logger.critical("HELP")
+    server = Server.objects.get(id=server_id)
+    logger.info(f"Got server {server.name} from database")
+    # Try making a HEAD request first and if it fails, do a GET request
+    try:
+        response = requests.head(f"https://{server.domain_name}", timeout=3)
+        response.raise_for_status()
+    except SSLError:
+        response = requests.head(f"http://{server.domain_name}", timeout=3)
+    except HTTPError:
+        response = requests.get(f"https://{server.domain_name}", timeout=3)
+
+    logger.info(response.headers)
+
     if response.headers == server.server_profile.security_headers:
+        logger.info("Not updating headers!")
         pass
     else:
+        logger.info("Updating headers!")
         log = ProfileChangelog(
             server_profile=server.server_profile,
             date_modified=datetime.now(),
@@ -135,10 +161,12 @@ def get_headers(server: Server):
         log.save()
         server.server_profile.security_headers = response.headers
         server.save()
+    return None
 
 
-@shared_task
-def ping(server: Server):
+@shared_task(name="ping")
+def ping(server_id: int):
+    server = Server.objects.get(id=server_id)
     ping = subprocess.Popen(
         ["ping", "-n", "30", server.ip_address],
         stdout=subprocess.PIPE,

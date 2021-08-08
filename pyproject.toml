@@ -12,6 +12,10 @@ django-celery-beat = "^2.2.1"
 idna = "^3.2"
 cryptography = "^3.4.7"
 pyOpenSSL = "^20.0.1"
+requests = "^2.26.0"
+dnspython = "^2.1.0"
+python3-nmap = "^1.5.0"
+redis = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.6b0", allow-prereleases = true}

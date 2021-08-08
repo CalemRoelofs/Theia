@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "sentinel.apps.SentinelConfig",
     "django_extensions",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -98,7 +99,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Dublin"
 
 USE_I18N = True
 
@@ -116,3 +117,9 @@ STATIC_URL = "/static/"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Celery Beat Settings
+CELERY_BROKER_URL = "redis://ubuntu.lan:6379/0"
+CELERY_RESULT_BACKEND = "redis://ubuntu.lan:6379/0"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
