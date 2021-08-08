@@ -159,7 +159,7 @@ def get_headers(server_id: int):
         log = ProfileChangelog(
             server=server,
             date_modified=datetime.now(tz),
-            changed_field="ssl_certs",
+            changed_field="security_headers",
             old_value=server.serverprofile.security_headers,
             new_value=response_headers,
         )
