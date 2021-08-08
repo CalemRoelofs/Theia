@@ -19,6 +19,9 @@ from .sslcheck import get_common_name
 from .sslcheck import get_issuer
 
 
+logger = get_task_logger(__name__)
+
+
 @shared_task(name="port_scan", serializer="json")
 def port_scan(server_id: int):
     server = Server.objects.get(id=server_id)
@@ -130,7 +133,7 @@ def ssl_certs(server_id: int):
 
 @shared_task(name="get_headers", serializer="json")
 def get_headers(server_id: int):
-    logger = get_task_logger(__name__)
+
     logger.info(f"Task started, getting server_ID {server_id}")
     print("Started task!")
     logger.critical("HELP")
@@ -182,3 +185,10 @@ def ping(server_id: int):
     stats = out.split("\n")[-2].strip().split(",")
     latency_results = [v.split(" ")[-1] for v in stats]
     return latency_results
+
+
+@shared_task(name="get_server")
+def get_server(server_id: int):
+    server = Server.objects.get(id=server_id)
+    logger.info(f"Got server {server.name}")
+    return server.name
