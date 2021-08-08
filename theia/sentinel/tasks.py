@@ -147,17 +147,11 @@ def get_headers(server_id: int):
     server = Server.objects.get(id=server_id)
     logger.info(f"Got server {server.name} from database")
     # Try making a HEAD request first and if it fails, do a GET request
-    try:
-        response = requests.head(f"https://{server.domain_name}", timeout=3)
-        response.raise_for_status()
-    except SSLError:
-        response = requests.head(f"http://{server.domain_name}", timeout=3)
-    except HTTPError:
-        response = requests.get(f"https://{server.domain_name}", timeout=3)
+    response = requests.head(f"https://{server.domain_name}")
+    response_headers = dict(response.headers)
+    logger.info(response_headers)
 
-    logger.info(response.headers)
-
-    if response.headers == server.serverprofile.security_headers:
+    if response_headers == server.serverprofile.security_headers:
         logger.info("Not updating headers!")
         pass
     else:
@@ -167,12 +161,12 @@ def get_headers(server_id: int):
             date_modified=datetime.now(tz),
             changed_field="ssl_certs",
             old_value=server.serverprofile.security_headers,
-            new_value=response.headers,
+            new_value=response_headers,
         )
         log.save()
-        server.serverprofile.security_headers = response.headers
+        server.serverprofile.security_headers = response_headers
         server.serverprofile.save()
-    return response.headers
+    return response_headers
 
 
 @shared_task(name="ping")
