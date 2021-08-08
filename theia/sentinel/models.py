@@ -6,9 +6,11 @@ class Server(models.Model):
     class Meta:
         verbose_name = "Server"
 
-    name = models.TextField("Name", unique=True, blank=False)
+    name = models.CharField("Name", unique=True, blank=False, max_length=255)
     ip_address = models.GenericIPAddressField("IP Address", unique=True, blank=False)
-    domain_name = models.URLField("Fully Qualified Domain Name", blank=True)
+    domain_name = models.CharField(
+        "Fully Qualified Domain Name", blank=True, max_length=255
+    )
     description = models.TextField("Description")
     developer = models.CharField("Developer", max_length=255)
     sysadmin = models.CharField("Sysadmin", max_length=255)
