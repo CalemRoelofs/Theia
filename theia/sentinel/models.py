@@ -30,7 +30,7 @@ class ServerProfile(models.Model):
     class Meta:
         verbose_name = "ServerProfile"
 
-    server = models.ForeignKey("Server", Server)
+    server = models.OneToOneField(Server, on_delete=models.CASCADE, primary_key=False)
     is_up = models.BooleanField("Host Reachable", null=False, blank=False)
     open_ports = models.JSONField("Open Ports", null=True, blank=True)
     security_headers = models.JSONField("Security Headers", null=True, blank=True)
