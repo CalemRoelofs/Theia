@@ -57,7 +57,7 @@ def port_scan(server_id: int):
         )
         log.save()
         server.serverprofile.open_ports = open_ports
-        server.save()
+        server.serverprofile.save()
     return open_ports
 
 
@@ -100,7 +100,7 @@ def dns_records(server_id: int):
         )
         log.save()
         server.serverprofile.dns_records = dns_results
-        server.save()
+        server.serverprofile.save()
     return dns_results
 
 
@@ -134,7 +134,7 @@ def ssl_certs(server_id: int):
         )
         log.save()
         server.serverprofile.ssl_certs = ssl_results
-        server.save()
+        server.serverprofile.save()
     return ssl_results
 
 
@@ -171,7 +171,7 @@ def get_headers(server_id: int):
         )
         log.save()
         server.serverprofile.security_headers = response.headers
-        server.save()
+        server.serverprofile.save()
     return response.headers
 
 
