@@ -53,7 +53,7 @@ class ProfileChangelog(models.Model):
     new_value = models.JSONField("New Value", null=True, blank=True)
 
     def __str__(self):
-        return f"{self.server_profile.server.name} - {self.date_modified}"
+        return f"{self.server.name} - {self.date_modified}"
 
 
 class ContactGroup(models.Model):
