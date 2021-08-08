@@ -22,6 +22,7 @@ from .sslcheck import get_issuer
 @shared_task(name="port_scan", serializer="json")
 def port_scan(server_id: int):
     server = Server.objects.get(id=server_id)
+
     nmap = nmap3.Nmap()
     # Aggressively scan (-T4) all 65535 ports (-p-)
     results = nmap.scan_top_ports(server.ip_address, args="-T4 -p-")
@@ -33,19 +34,19 @@ def port_scan(server_id: int):
     ]
 
     # save the results to the server's profile
-    if open_ports == server.server_profile.open_ports:
+    if open_ports == server.serverprofile.open_ports:
         # If there's no change don't do anything
         pass
     else:
         log = ProfileChangelog(
-            server_profile=server.server_profile,
+            server=server,
             date_modified=datetime.now(),
             changed_field="open_ports",
-            old_value=server.server_profile.open_ports,
+            old_value=server.serverprofile.open_ports,
             new_value=open_ports,
         )
         log.save()
-        server.server_profile.open_ports = open_ports
+        server.serverprofile.open_ports = open_ports
         server.save()
     return None
 
@@ -76,19 +77,19 @@ def dns_records(server_id: int):
         except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout):
             continue
 
-    if dns_results == server.server_profile.dns_records:
+    if dns_results == server.serverprofile.dns_records:
         # If there's no change don't do anything
         pass
     else:
         log = ProfileChangelog(
-            server_profile=server.server_profile,
+            server=server,
             date_modified=datetime.now(),
             changed_field="dns_records",
-            old_value=server.server_profile.dns_records,
+            old_value=server.serverprofile.dns_records,
             new_value=dns_results,
         )
         log.save()
-        server.server_profile.dns_records = dns_results
+        server.serverprofile.dns_records = dns_results
         server.save()
     return None
 
@@ -110,19 +111,19 @@ def ssl_certs(server_id: int):
         ),
     }
 
-    if ssl_results == server.server_profile.ssl_certs:
+    if ssl_results == server.serverprofile.ssl_certs:
         # If there's no change don't do anything
         pass
     else:
         log = ProfileChangelog(
-            server_profile=server.server_profile,
+            server=server,
             date_modified=datetime.now(),
             changed_field="ssl_certs",
-            old_value=server.server_profile.ssl_certs,
+            old_value=server.serverprofile.ssl_certs,
             new_value=ssl_results,
         )
         log.save()
-        server.server_profile.ssl_certs = ssl_results
+        server.serverprofile.ssl_certs = ssl_results
         server.save()
     return None
 
@@ -146,20 +147,20 @@ def get_headers(server_id: int):
 
     logger.info(response.headers)
 
-    if response.headers == server.server_profile.security_headers:
+    if response.headers == server.serverprofile.security_headers:
         logger.info("Not updating headers!")
         pass
     else:
         logger.info("Updating headers!")
         log = ProfileChangelog(
-            server_profile=server.server_profile,
+            server=server,
             date_modified=datetime.now(),
             changed_field="ssl_certs",
-            old_value=server.server_profile.security_headers,
+            old_value=server.serverprofile.security_headers,
             new_value=response.headers,
         )
         log.save()
-        server.server_profile.security_headers = response.headers
+        server.serverprofile.security_headers = response.headers
         server.save()
     return None
 
