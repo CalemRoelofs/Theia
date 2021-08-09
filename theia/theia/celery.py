@@ -5,7 +5,7 @@ from celery import Celery
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "theia.settings")
 
-app = Celery("Theia")
+app = Celery("theia")
 
 app.config_from_object("django.conf:settings", namespace="CELERY")
 

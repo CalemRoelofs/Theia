@@ -1,54 +1,71 @@
 # -*- coding: utf-8 -*-
+import platform
 import subprocess
+from collections import Counter
 from datetime import datetime
-from typing import Dict
-from typing import List
+from ssl import RAND_status
 
 import dns.exception
 import dns.resolver
 import nmap3
 import requests
 from celery import shared_task
-from sentinel.models import ProfileChangelog
-from sentinel.models import Server
-from sslcheck import get_alt_names
-from sslcheck import get_certificate
-from sslcheck import get_common_name
-from sslcheck import get_issuer
+from celery.utils.log import get_task_logger
+from dns import reversename
+from requests.exceptions import ConnectTimeout
+from requests.models import HTTPError
+
+from .models import Server
+from .sslcheck import check_if_ssl
+from .sslcheck import get_alt_names
+from .sslcheck import get_certificate
+from .sslcheck import get_common_name
+from .sslcheck import get_issuer
+from .utils import log_changes
+from .utils import tz
+
+logger = get_task_logger(__name__)
 
 
-@shared_task
-def port_scan(server: Server):
+@shared_task(name="port_scan", serializer="json", max_retries=3, soft_time_limit=20)
+def port_scan(server_id: int):
+    try:
+        server = Server.objects.get(id=server_id)
+    except Server.DoesNotExist:
+        return f"Server with id '{server_id}' does not exist!"
+
+    logger.debug(f"Got server {server.name}")
+
     nmap = nmap3.Nmap()
     # Aggressively scan (-T4) all 65535 ports (-p-)
     results = nmap.scan_top_ports(server.ip_address, args="-T4 -p-")
-    if not results[server.ip_address]:
-        raise RuntimeError(f"Could not find host {server.ip_address} in nmap scan!")
+    if not server.ip_address in results:
+        message = f"Could not find host {server.ip_address} in nmap scan!"
+        logger.critical(message)
+        return message
+
+    logger.info(f"Succesfully scanned {server.ip_address}")
 
     open_ports = [
         p["portid"] for p in results[server.ip_address]["ports"] if p["state"] == "open"
     ]
 
     # save the results to the server's profile
-    if open_ports == server.server_profile.open_ports:
-        # If there's no change don't do anything
-        pass
+    if open_ports == server.serverprofile.open_ports:
+        return "SUCCESS"
     else:
-        log = ProfileChangelog(
-            server_profile=server.server_profile,
-            date_modified=datetime.now(),
-            changed_field="open_ports",
-            old_value=server.server_profile.open_ports,
-            new_value=open_ports,
-        )
-        log.save()
-        server.server_profile.open_ports = open_ports
-        server.save()
+        logger.info(f"Detected change, creating new changelog")
+        log_changes(server, "open_ports", open_ports)
+    return "SUCCESS"
 
 
-@shared_task
-def dns_records(server: Server):
-    dns_results = {
+@shared_task(name="dns_records", serializer="json", max_retries=3, soft_time_limit=20)
+def dns_records(server_id: int):
+    try:
+        server = Server.objects.get(id=server_id)
+    except Server.DoesNotExist:
+        return f"Server with id '{server_id}' does not exist!"
+    dns_records = {
         "A": [],
         "CNAME": [],
         "MX": [],
@@ -59,43 +76,59 @@ def dns_records(server: Server):
         "PTR": [],
     }
 
-    for record in dns_results.keys():
+    for record in dns_records.keys():
         try:
             if record == "PTR":
-                answer = dns.resolver.resolve(server.ip_address, record, lifetime=10)
+                addr = reversename.from_address(server.ip_address)
+                answer = dns.resolver.resolve(addr, record, lifetime=10)
             else:
                 answer = dns.resolver.resolve(server.domain_name, record, lifetime=10)
 
-            dns_results[record] = [a.to_text() for a in answer]
+            dns_records[record] = [a.to_text() for a in answer]
 
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout):
+        except dns.resolver.NoAnswer:
             continue
+        except dns.resolver.NoNameservers:
+            message = f"Could not resolve domain {server.domain_name}!"
+            logger.error(message)
+            return message
+        except dns.exception.Timeout:
+            message = f"Request timed out when querying DNS!"
+            logger.error(message)
+            return message
 
-    if dns_results == server.server_profile.dns_records:
-        # If there's no change don't do anything
-        pass
-    else:
-        log = ProfileChangelog(
-            server_profile=server.server_profile,
-            date_modified=datetime.now(),
-            changed_field="dns_records",
-            old_value=server.server_profile.dns_records,
-            new_value=dns_results,
-        )
-        log.save()
-        server.server_profile.dns_records = dns_results
-        server.save()
+    old_records = server.serverprofile.dns_records
+
+    if old_records == "null":
+        log_changes(server, "dns_records", dns_records)
+        return "SUCCESS"
+
+    for record in dns_records.keys():
+        if Counter(dns_records[record]) == Counter(old_records[record]):
+            continue
+        else:
+            log_changes(server, "dns_records", dns_records)
+            break
+    return "SUCCESS"
 
 
-@shared_task
-def ssl_certs(server: Server):
-    hostinfo = get_certificate(server.domain_name, 443)
+@shared_task(name="ssl_certs", serializer="json", max_retries=3, soft_time_limit=20)
+def ssl_certs(server_id: int):
+    try:
+        server = Server.objects.get(id=server_id)
+    except Server.DoesNotExist:
+        return f"Server with id '{server_id}' does not exist!"
+    try:
+        hostinfo = get_certificate(server.domain_name, 443)
+    except TimeoutError:
+        return f"Failed to make SSL connection to {server.domain_name}"
+
     ssl_results = {
         "common_name": get_common_name(hostinfo.cert),
         "SAN": get_alt_names(hostinfo.cert),
         "issuer": get_issuer(hostinfo.cert),
-        "not_before": hostinfo.cert.not_valid_before,
-        "not_after": hostinfo.cert.not_valid_after,
+        "not_before": hostinfo.cert.not_valid_before.strftime("%Y-%m-%d %H:%M:%S"),
+        "not_after": hostinfo.cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S"),
         "expired": not (
             hostinfo.cert.not_valid_before
             < datetime.now()
@@ -103,53 +136,152 @@ def ssl_certs(server: Server):
         ),
     }
 
-    if ssl_results == server.server_profile.ssl_certs:
-        # If there's no change don't do anything
-        pass
-    else:
-        log = ProfileChangelog(
-            server_profile=server.server_profile,
-            date_modified=datetime.now(),
-            changed_field="ssl_certs",
-            old_value=server.server_profile.ssl_certs,
-            new_value=ssl_results,
-        )
-        log.save()
-        server.server_profile.ssl_certs = ssl_results
-        server.save()
+    old_records = server.serverprofile.ssl_certs
+
+    if old_records == "null":
+        log_changes(server, "ssl_certs", ssl_results)
+        return "SUCCESS"
+
+    for record in ssl_results.keys():
+        if Counter(ssl_results[record]) == Counter(old_records[record]):
+            continue
+        else:
+            log_changes(server, "ssl_certs", ssl_results)
+            break
+    return "SUCCESS"
 
 
-@shared_task
-def get_headers(server: Server):
-    response = requests.get(f"https://{server.domain_name}")
-    if response.headers == server.server_profile.security_headers:
-        pass
-    else:
-        log = ProfileChangelog(
-            server_profile=server.server_profile,
-            date_modified=datetime.now(),
-            changed_field="ssl_certs",
-            old_value=server.server_profile.security_headers,
-            new_value=response.headers,
-        )
-        log.save()
-        server.server_profile.security_headers = response.headers
-        server.save()
+@shared_task(name="get_headers", serializer="json", max_retries=3, soft_time_limit=20)
+def get_headers(server_id: int):
+    try:
+        server = Server.objects.get(id=server_id)
+    except Server.DoesNotExist:
+        return f"Server with id '{server_id}' does not exist!"
+
+    try:
+        if check_if_ssl(server.domain_name, 443):
+            response = requests.get(f"https://{server.domain_name}", timeout=5)
+        else:
+            response = requests.get(f"http://{server.domain_name}", timeout=5)
+
+    except ConnectTimeout:
+        message = f"Connection to {server.domain_name} timed out"
+        logger.error(message)
+        return message
+    except requests.RequestException as e:
+        message = f"There was an error connecting to {server.domain_name}"
+        logger.error(e)
+        return message
+
+    security_headers_whitelist = {
+        "Cache-Control",
+        "Content-Security-Policy",
+        "Content-Type",
+        "Cross-Origin-Embedder-Policy",
+        "Cross-Origin-Opener-Policy",
+        "Cross-Origin-Resource-Policy",
+        "Expect-CT",
+        "Permissions-Policy",
+        "Pragma",
+        "Referrer-Policy",
+        "Server",
+        "Strict-Transport-Security",
+        "Vary",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+    }
+
+    # Requests response headers are a CaseInsensitiveDict
+    # and need to be casted to a regular Dict before they
+    # can be serialized into JSON.
+    response_headers = dict(response.headers)
+
+    # Remove all the header fields we don't care about
+    response_keys = list(response_headers.keys())
+    for header in response_keys:
+        if header not in security_headers_whitelist:
+            del response_headers[header]
+
+    old_records = server.serverprofile.security_headers
+
+    if old_records == "null":
+        log_changes(server, "security_headers", response_headers)
+        return "SUCCESS"
+
+    for header in response_headers.keys():
+        if Counter(response_headers[header]) == Counter(old_records[header]):
+            continue
+        else:
+            log_changes(server, "security_headers", response_headers)
+            break
+    return "SUCCESS"
 
 
-@shared_task
-def ping(server: Server):
+@shared_task(name="ping_server", max_retries=3, soft_time_limit=20)
+def ping_server(server_id: int):
+    try:
+        server = Server.objects.get(id=server_id)
+    except Server.DoesNotExist:
+        return f"Server with id '{server_id}' does not exist!"
+
+    param = "-n" if platform.system().lower() == "windows" else "-c"
     ping = subprocess.Popen(
-        ["ping", "-n", "30", server.ip_address],
+        ["ping", param, "2", server.ip_address],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
 
     output_bytes, error = ping.communicate()
     out = output_bytes.decode("utf-8").lower()
-    if "unreachable" in out or "failure" in out:
-        server.reachable = False
-    server.reachable = True
-    stats = out.split("\n")[-2].strip().split(",")
-    latency_results = [v.split(" ")[-1] for v in stats]
-    return latency_results
+    if "unreachable" in out or "failure" in out or "100% packet loss" in out:
+        message = f"Could not ping {server.ip_address}"
+        logger.error(message)
+
+        if server.serverprofile.is_up:
+            log_changes(server, "is_up", False)
+
+        return message
+
+    if server.serverprofile.is_up == False:
+        log_changes(server, "is_up", True)
+
+    latency_results = {"min": "", "max": "", "avg": ""}
+    latency_values = []
+
+    try:
+        if platform.system().lower() == "windows":
+            # Windows: Minimum = 5ms, Maximum = 5ms, Average = 5ms
+            stats = out.split("\n")[-2].strip().split(",")
+            latency_values = [v.split(" ")[-1] for v in stats]
+            latency_results["min"] = latency_values[0]
+            latency_results["max"] = latency_values[1]
+            latency_results["avg"] = latency_values[2]
+
+        else:
+            # Linux: rtt min/avg/max/mdev = 4.513/5.296/5.577/0.399 ms
+            stats = out.split("\n")[-2].split(" ")[-2]
+            latency_values = [v for v in stats.split("/")][:-1]
+            latency_results["min"] = latency_values[0]
+            latency_results["max"] = latency_values[1]
+            latency_results["avg"] = latency_values[2]
+    except Exception:
+        message = f"Something went wrong parsing the ping values."
+        logger.error(message)
+        return "Something went wrong parsing the ping values."
+
+    log_changes(server, "latency", latency_results)
+
+    return "SUCCESS"
+
+
+@shared_task(name="debug_task")
+def debug_task():
+    """Debug task to make sure beat, workers and message queue are operational
+
+    Args:
+        server_id (int): A PK of any Server Object
+
+    Returns:
+        str: The name of the Server object
+    """
+    return "SUCCESS"

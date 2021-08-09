@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # requires a recent enough python with idna support in socket
 # pyopenssl, cryptography and idna
+import socket
+import ssl
 from collections import namedtuple
 from datetime import datetime
-from socket import socket
 
 import idna
 from cryptography import x509
@@ -11,12 +12,6 @@ from cryptography.x509.oid import NameOID
 from OpenSSL import SSL
 
 HostInfo = namedtuple(field_names="cert hostname peername", typename="HostInfo")
-
-HOSTS = [
-    ("www.viatel.com", 443),
-    ("expired.badssl.com", 443),
-    ("wrong.host.badssl.com", 443),
-]
 
 
 def has_expired(not_before, not_after):
@@ -28,9 +23,34 @@ def has_expired(not_before, not_after):
     # issuer
 
 
+# The PyOpenSSL library doesn't have a (working) way of setting
+# the socket timeout and will wait for 300 seconds before timing out.
+# This helper function just checks to see if it can make an SSL
+# connection before the rest of the get_certificate method runs.
+def check_if_ssl(hostname, port):
+    valid = True
+    _ssl_ctx = ssl.SSLContext()
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
+    _ssl_ctx.check_hostname = False
+    _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    _sock.settimeout(5)
+    _ssl_sock = _ssl_ctx.wrap_socket(_sock, do_handshake_on_connect=False)
+    try:
+        _ssl_sock.connect((hostname, port))
+        _ssl_sock.do_handshake()
+    except Exception as e:
+        valid = False
+    finally:
+        _ssl_sock.close()
+    return valid
+
+
 def get_certificate(hostname, port):
+    if not check_if_ssl(hostname, port):
+        raise TimeoutError(f"Failed to make SSL connection to {hostname}")
+
     hostname_idna = idna.encode(hostname)
-    sock = socket()
+    sock = socket.socket()
 
     sock.connect((hostname, port))
     peername = sock.getpeername()

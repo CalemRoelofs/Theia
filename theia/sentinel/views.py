@@ -2,7 +2,11 @@
 from django.shortcuts import render
 
 # Create your views here.
-def server_overview():
+def index(request):
+    return render(request, "sentinel/layout.html", context={})
+
+
+def server_overview(request):
     pass
 
 
