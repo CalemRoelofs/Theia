@@ -37,7 +37,7 @@ class ServerProfile(models.Model):
     open_ports = models.JSONField("Open Ports", null=True, blank=True)
     security_headers = models.JSONField("Security Headers", null=True, blank=True)
     ssl_certs = models.JSONField("SSL Certificates", null=True, blank=True)
-    latency = models.IntegerField("Latency")
+    latency = models.JSONField("Latency Results", null=True, blank=True)
     dns_records = models.JSONField("DNS Records", null=True, blank=True)
 
     def __str__(self):
