@@ -1,0 +1,192 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load customfilters %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 order-xs-2">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="la la-info-circle la-lg"> </i>
+                        Server View - {{ server.name }}</div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Domain Name</th>
+                            <td>{{ server.domain_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>IPv4 Address</th>
+                            <td>{{ server.ip_address }}</td>
+                        </tr>
+                        <tr>
+                            <th>Description</th>
+                            <td>{{ server.description }}</td>
+                        </tr>
+                        <tr>
+                            <th>Developer</th>
+                            <td>{{ server.developer }}</td>
+                        </tr>
+                        <tr>
+                            <th>Administrator</th>
+                            <td>{{ server.sysadmin }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date Added</th>
+                            <td>{{ server.date_added }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Checked</th>
+                            <td>{{ server.date_last_checked }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="la la-history la-lg"> </i> Changelog</div>
+                </div>
+                <div class="card-body">
+                    <table class="table mt-3 text-wrap">
+                        <thead>
+                            <tr>
+                                <th scope="col-xl-3">Timestamp</th>
+                                <th scope="col-xl-1">Changed Field</th>
+                                <th scope="col-xl-4">Old Value</th>
+                                <th scope="col-xl-4">New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in changelog %}
+                            <tr>
+                                <td>{{ log.date_modified }}</td>
+                                <td>{{ log.changed_field }}</td>
+                                {% if log.changed_field == "open_ports" %}
+                                <td>
+                                    {% if log.old_value == None %}
+                                    <span>No data</span>
+                                    {% else %}
+                                    {% for port in log.old_value %}
+                                    <span class="text-{% if port in log.new_value  %}danger{% else %}dark{% endif %}">
+                                        {{port }}
+                                    </span>
+                                    {% endfor %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for port in log.new_value %}
+                                    <span class="text-{% if port in log.new_value  %}success{% else %}dark{% endif %}">
+                                        {{ port }}
+                                    </span>
+                                    {% if not forloop.last or log.new_value.count > 1 %}
+                                    <hr />
+                                    {% endif %}
+                                    {% endfor %}
+                                </td>
+                                {% else %}
+                                <td>
+                                    {% if not log.old_value %}
+                                    <span>No Data</span>
+                                    {% else %}
+                                    {% for k,v in log.old_value.items %}
+                                    {% if k not in log.new_value.keys or v != log.new_value|get_item:k %}
+                                    <span>{{ k|title }}: </span><br>
+                                    <span
+                                        class="text-{% if k not in log.new_value.keys or v != log.new_value|get_item:k %}danger{% else %}dark{% endif %}">
+                                        {{ v }}
+                                    </span>
+                                    {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                    <br />
+                                    {% endif %}
+                                    {% else %}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for k,v in log.new_value.items %}
+                                    {% if not log.old_value %}
+                                    <span>{{ k|title }}: </span><br>
+                                    <span class="text-success">
+                                        {{ v }}
+                                    </span>
+                                    {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                    <br />
+                                    {% endif %}
+                                    {% elif k not in log.old_value.keys or v != log.old_value|get_item:k %}
+                                    <span>{{ k|title }}: </span><br>
+                                    <span class="text-success">
+                                        {{ v }}
+                                    </span>
+                                    {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                    <br />
+                                    {% endif %}
+                                    {% else %}
+                                    {% endif %}
+                                    {% endfor %}
+                                </td>
+                                {% endif %}
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 order-xs-1">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="la la-server la-lg"> </i> Server profile as of {{ server.date_last_checked }}
+                    </div>
+
+                </div>
+                <div class="card-body">
+                    <label for="open-ports-table">Open Ports</label>
+                    <table class="table" id="open-ports-table">
+                        {% for port in server.serverprofile.open_ports %}
+                        <tr>
+                            <td>{{ port }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    <label for="dns-records-table">DNS Records</label>
+                    <table class="table" id="dns-records-table">
+                        {% for k,v in server.serverprofile.dns_records.items %}
+                        <tr>
+                            <th>{{ k }}</th>
+                            <td>
+                                {% for record in v %}
+                                <span>{{ record }}</span><br>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    <label for="security-headers-table">Security Headers</label>
+                    <table class="table" id="security-headers-table">
+                        {% for k,v in server.serverprofile.security_headers.items %}
+                        <tr>
+                            <th>{{ k }}</th>
+                            <td>{{ v }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    <label for="ssl-certs-table">SSL Certs</label>
+                    <table class="table" id="ssl-certs-table">
+                        {% for k,v in server.serverprofile.ssl_certs.items %}
+                        <tr>
+                            <th>{{ k }}</th>
+                            <td>{{ v }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

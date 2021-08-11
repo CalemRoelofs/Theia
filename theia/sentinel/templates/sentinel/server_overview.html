@@ -1,0 +1,152 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h4 class="page-title">Servers</h4>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Server List
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#exampleModalCenter">
+                            Add New Server
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table mt-3">
+                        <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">FQDN</th>
+                                <th scope="col">IPv4</th>
+                                <th scope="col">Last Checked</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for server in servers %}
+                            <tr>
+                                <td><a href="{% url 'server_view' server_id=server.id %}">{{ server.id }}</a></td>
+                                <td>{{ server.name }}</td>
+                                <td>{{ server.domain_name }}</td>
+                                <td>{{ server.ip_address }}</td>
+                                <td>{{ server.date_last_checked }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Recent Change</div>
+                </div>
+                <div class="card-body">
+                    <table class="table mt-3">
+                        <thead>
+                            <tr>
+                                <th scope="col">Timestamp</th>
+                                <th scope="col">Server</th>
+                                <th scope="col">Changed Field</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in changelog %}
+                            <tr>
+                                <td>{{ log.date_modified }}</td>
+                                <td>{{ log.server.name }}</td>
+                                <td>{{ log.changed_field }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Add a new server</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group row">
+                        <label for="server-name-input" class="col-sm-4 col-form-label">Name</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_name" id="server-name-input" required
+                                placeholder="SRV-01" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-domain-input" class="col-sm-4 col-form-label">FQDN</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_domain_name" id="server-domain-input"
+                                placeholder="example.com" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-ip-input" class="col-sm-4 col-form-label">IPv4 Address</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_ip_address" id="server-ip-input"
+                                placeholder="127.0.0.1" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-desc-input" class="col-sm-4 col-form-label">Description</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_description" id="server-desc-input"
+                                placeholder="Mission critical box!" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-developer-input" class="col-sm-4 col-form-label">Developer</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_developer" id="server-developer-input"
+                                placeholder="John Smith" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-sysadmin-input" class="col-sm-4 col-form-label">Administrator</label>
+                        <div class="col-sm-8">
+                            <input class="form-control" type="text" name="server_sysadmin" id="server-sysadmin-input"
+                                placeholder="Dave Null" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="server-frequency-input" class="col-sm-4 col-form-label">Check Frequency</label>
+                        <div class="col-sm-4">
+                            <input class="form-control" type="number" name="server_check_frequency"
+                                id="server-frequency-input" placeholder="10" />
+                        </div>
+                        <div class="col-sm-4">
+                            <select class="form-control" name="server_check_interval">
+                                <option value="minute">Minutes</option>
+                                <option value="hour">Hours</option>
+                                <option value="day" selected>Days</option>
+                                <option value="week">Months</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
