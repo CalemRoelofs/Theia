@@ -15,6 +15,7 @@ from dns import reversename
 from requests.exceptions import ConnectTimeout
 from requests.models import HTTPError
 
+from .constants import SECURITY_HEADERS_WHITELIST
 from .models import Server
 from .sslcheck import check_if_ssl
 from .sslcheck import get_alt_names
@@ -45,6 +46,9 @@ def port_scan(server_id: int):
         return message
 
     logger.info(f"Succesfully scanned {server.ip_address}")
+
+    server.date_last_checked = datetime.now(tz)
+    server.save()
 
     open_ports = [
         p["portid"] for p in results[server.ip_address]["ports"] if p["state"] == "open"
@@ -89,17 +93,26 @@ def dns_records(server_id: int):
         except dns.resolver.NoAnswer:
             continue
         except dns.resolver.NoNameservers:
-            message = f"Could not resolve domain {server.domain_name}!"
+            message = f"Could not resolve domain {server.domain_name} for {server}'s {record} record!"
             logger.error(message)
             return message
         except dns.exception.Timeout:
-            message = f"Request timed out when querying DNS!"
+            message = (
+                f"Request timed out when querying DNS for {server}'s {record} record!"
+            )
             logger.error(message)
-            return message
+        except dns.resolver.NXDOMAIN:
+            message = (
+                f"The DNS query name does not exist for {server}'s {record} record!"
+            )
+            logger.error(message)
+
+    server.date_last_checked = datetime.now(tz)
+    server.save()
 
     old_records = server.serverprofile.dns_records
 
-    if old_records == "null":
+    if not old_records:
         log_changes(server, "dns_records", dns_records)
         return "SUCCESS"
 
@@ -121,7 +134,7 @@ def ssl_certs(server_id: int):
     try:
         hostinfo = get_certificate(server.domain_name, 443)
     except TimeoutError:
-        return f"Failed to make SSL connection to {server.domain_name}"
+        return f"Failed to make SSL connection to {server.domain_name} for {server}!"
 
     ssl_results = {
         "common_name": get_common_name(hostinfo.cert),
@@ -136,13 +149,17 @@ def ssl_certs(server_id: int):
         ),
     }
 
-    old_records = server.serverprofile.ssl_certs
+    server.date_last_checked = datetime.now(tz)
+    server.save()
 
-    if old_records == "null":
+    old_records = server.serverprofile.ssl_certs
+    if not old_records:
         log_changes(server, "ssl_certs", ssl_results)
         return "SUCCESS"
 
     for record in ssl_results.keys():
+        if old_records["expired"] == ssl_results["expired"]:
+            continue
         if Counter(ssl_results[record]) == Counter(old_records[record]):
             continue
         else:
@@ -165,31 +182,16 @@ def get_headers(server_id: int):
             response = requests.get(f"http://{server.domain_name}", timeout=5)
 
     except ConnectTimeout:
-        message = f"Connection to {server.domain_name} timed out"
+        message = f"Connection to {server.domain_name} timed out for {server}!"
         logger.error(message)
         return message
     except requests.RequestException as e:
-        message = f"There was an error connecting to {server.domain_name}"
+        message = f"There was an error connecting to {server.domain_name} for {server}!"
         logger.error(e)
         return message
 
-    security_headers_whitelist = {
-        "Cache-Control",
-        "Content-Security-Policy",
-        "Content-Type",
-        "Cross-Origin-Embedder-Policy",
-        "Cross-Origin-Opener-Policy",
-        "Cross-Origin-Resource-Policy",
-        "Expect-CT",
-        "Permissions-Policy",
-        "Pragma",
-        "Referrer-Policy",
-        "Server",
-        "Strict-Transport-Security",
-        "Vary",
-        "X-Content-Type-Options",
-        "X-Frame-Options",
-    }
+    server.date_last_checked = datetime.now(tz)
+    server.save()
 
     # Requests response headers are a CaseInsensitiveDict
     # and need to be casted to a regular Dict before they
@@ -199,12 +201,11 @@ def get_headers(server_id: int):
     # Remove all the header fields we don't care about
     response_keys = list(response_headers.keys())
     for header in response_keys:
-        if header not in security_headers_whitelist:
+        if header not in SECURITY_HEADERS_WHITELIST:
             del response_headers[header]
 
     old_records = server.serverprofile.security_headers
-
-    if old_records == "null":
+    if not old_records:
         log_changes(server, "security_headers", response_headers)
         return "SUCCESS"
 
@@ -230,6 +231,9 @@ def ping_server(server_id: int):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+    server.date_last_checked = datetime.now(tz)
+    server.save()
 
     output_bytes, error = ping.communicate()
     out = output_bytes.decode("utf-8").lower()
@@ -265,7 +269,7 @@ def ping_server(server_id: int):
             latency_results["max"] = latency_values[1]
             latency_results["avg"] = latency_values[2]
     except Exception:
-        message = f"Something went wrong parsing the ping values."
+        message = f"Something went wrong parsing the ping values for {server}!."
         logger.error(message)
         return "Something went wrong parsing the ping values."
 
