@@ -3,7 +3,6 @@ import platform
 import subprocess
 from collections import Counter
 from datetime import datetime
-from ssl import RAND_status
 
 import dns.exception
 import dns.resolver
@@ -11,9 +10,9 @@ import nmap3
 import requests
 from celery import shared_task
 from celery.utils.log import get_task_logger
+from django.utils.timezone import now
 from dns import reversename
 from requests.exceptions import ConnectTimeout
-from requests.models import HTTPError
 
 from .constants import SECURITY_HEADERS_WHITELIST
 from .models import Server
@@ -23,7 +22,7 @@ from .sslcheck import get_certificate
 from .sslcheck import get_common_name
 from .sslcheck import get_issuer
 from .utils import log_changes
-from .utils import tz
+
 
 logger = get_task_logger(__name__)
 
@@ -47,7 +46,7 @@ def port_scan(server_id: int):
 
     logger.info(f"Succesfully scanned {server.ip_address}")
 
-    server.date_last_checked = datetime.now(tz)
+    server.date_last_checked = now()
     server.save()
 
     open_ports = [
@@ -63,7 +62,7 @@ def port_scan(server_id: int):
     return "SUCCESS"
 
 
-@shared_task(name="dns_records", serializer="json", max_retries=3, soft_time_limit=20)
+@shared_task(name="dns_records", serializer="json", max_retries=3, soft_time_limit=60)
 def dns_records(server_id: int):
     try:
         server = Server.objects.get(id=server_id)
@@ -107,7 +106,7 @@ def dns_records(server_id: int):
             )
             logger.error(message)
 
-    server.date_last_checked = datetime.now(tz)
+    server.date_last_checked = now()
     server.save()
 
     old_records = server.serverprofile.dns_records
@@ -149,7 +148,7 @@ def ssl_certs(server_id: int):
         ),
     }
 
-    server.date_last_checked = datetime.now(tz)
+    server.date_last_checked = now()
     server.save()
 
     old_records = server.serverprofile.ssl_certs
@@ -190,7 +189,7 @@ def get_headers(server_id: int):
         logger.error(e)
         return message
 
-    server.date_last_checked = datetime.now(tz)
+    server.date_last_checked = now()
     server.save()
 
     # Requests response headers are a CaseInsensitiveDict
@@ -232,7 +231,7 @@ def ping_server(server_id: int):
         stderr=subprocess.PIPE,
     )
 
-    server.date_last_checked = datetime.now(tz)
+    server.date_last_checked = now()
     server.save()
 
     output_bytes, error = ping.communicate()
