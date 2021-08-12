@@ -1,6 +1,7 @@
 {% extends 'sentinel/_layout.html' %}
 {% load static %}
 {% load customfilters %}
+{% load widget_tweaks %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
 <div class="container-fluid">
@@ -9,7 +10,12 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><i class="la la-info-circle la-lg"> </i>
-                        Server View - {{ server.name }}</div>
+                        Server View - {{ server.name }}
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#edit_server_modal">
+                            <i class="la la-edit la-lg"> </i> Edit Server
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm">
@@ -142,7 +148,6 @@
                     <div class="card-title">
                         <i class="la la-server la-lg"> </i> Server profile as of {{ server.date_last_checked }}
                     </div>
-
                 </div>
                 <div class="card-body">
                     <label for="open-ports-table">Open Ports</label>
@@ -185,6 +190,43 @@
                         {% endfor %}
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit_server_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Edit {{ server.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'edit_server' %}" method="POST" id="edit_server_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{ server.id }}" name="id" />
+                    {% for field in edit_server_form %}
+                    <div class="form-group row">
+                        <label for="{{ field.auto_id }}" class="col-sm-4 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {% if field.field.widget.input_type == "checkbox" %}
+                            <input type="checkbox" checked data-toggle="toggle" data-size="md" name="{{ field.name }}"
+                                id="{{ field.auto_id }}">
+                            {% else %}
+                            {{ field|add_class:"form-control" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="document.getElementById('edit_server_form').submit()">Save changes</button>
             </div>
         </div>
     </div>

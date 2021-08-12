@@ -1,0 +1,141 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Server List
+                        <button type="button" class="btn btn-primary pull-right">
+                            Do Something
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Server</th>
+                            <th>Changed Field</th>
+                            <th>Acknowledged</th>
+                        </thead>
+                        <tbody>
+                            {% for log in changelog %}
+                            <tr>
+                                <td>{{ log.id }}</td>
+                                <td>{{ log.date_modified}}</td>
+                                <td>
+                                    <a href="{% url 'server_view' server_id=log.server.id %}">
+                                        {{ log.server.name}}
+                                    </a>
+                                </td>
+                                <td>{{ log.changed_field }}</td>
+                                <td>
+
+                                    <label class="form-check-label">
+                                        <input class="form-check-input" type="checkbox" name="ack"
+                                            id="checkbox-{{log.id}}" value="{{ log.id }}" {% if log.acknowledged %}
+                                            checked disabled {% endif %}>
+                                        <span class="form-check-sign"></span>
+                                    </label>
+
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+let cookie = document.cookie
+let csrfToken = cookie.substring(cookie.indexOf('=') + 1)
+let checkbox = document.getElementById("checkbox-" + id)
+var xhttp = new XMLHttpRequest();
+xhttp.open("POST", "{% url 'ack_changelog' %}", true);
+xhttp.setRequestHeader("Content-Type", "application/json");
+xhttp.setRequestHeader('X-CSRFToken', csrfToken);
+<script type="text/javascript" language="javascript">
+    $(document).ready(function () {
+        $('input[type=checkbox][name=ack]').change(function () {
+            let inputbox = $(this);
+            if ($(this).prop("checked")) {
+                let cookie = document.cookie;
+                let csrfToken = cookie.substring(cookie.indexOf('=') + 1);
+                $.ajax({
+                    type: "POST",
+                    url: '{% url "ack_changelog" %}',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    data: JSON.stringify({ id: $(this).val() }),
+                    dataType: "JSON",
+                    success: function (response) {
+                        $(inputbox).prop("disabled", true);
+                    },
+                    error: function (response) {
+                        console.log(response);
+                        $.notify({
+                            // options
+                            title: 'Error',
+                            message: 'Something went wrong.',
+                            icon: 'la la-exclamation-circle'
+                        }, {
+                            // settings
+                            type: 'danger',
+                            placement: {
+                                from: 'top',
+                                align: 'right'
+                            },
+                            time: 1000,
+                        });
+                    }
+                });
+            }
+        });
+    });
+</script>
+<!--
+    {
+        let cookie = document.cookie
+        let csrfToken = cookie.substring(cookie.indexOf('=') + 1)
+        let checkbox = document.getElementById("checkbox-" + id)
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("POST", "{% url 'ack_changelog' %}", true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.setRequestHeader('X-CSRFToken', csrfToken);
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // Response
+                var response = JSON.parse(this.responseText);
+                console.log(response.message)
+                console.log("Acknowledged")
+                console.log(response.message != "Acknowledged")
+                if (response.message != "Acknowledged") {
+                    $.notify({
+                        message: response.message
+                    }, {
+                        type: 'danger'
+                    });
+
+                } else {
+                    checkbox.disabled = true;
+                    checkbox.checked = true;
+                }
+
+            }
+        };
+        var data = { id: id };
+        xhttp.send(JSON.stringify(data));
+    }
+</script>
+-->
+{% endblock %}

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "sentinel.apps.SentinelConfig",
     "django_extensions",
     "django_celery_beat",
+    "widget_tweaks",
 ]
 
 MIDDLEWARE = [
