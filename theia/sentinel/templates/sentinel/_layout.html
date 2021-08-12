@@ -35,7 +35,7 @@
     <div class="wrapper">
         <div class="main-header">
             <div class="logo-header">
-                <a href="index.html" class="logo">
+                <a href="{% url 'index' %}" class="logo">
                     Theia
                 </a>
                 <button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse"
@@ -46,16 +46,7 @@
             </div>
             <nav class="navbar navbar-header navbar-light navbar-expand-lg">
                 <div class="container-fluid">
-                    <form class="navbar-left navbar-form nav-search mr-md-3" action="">
-                        <div class="input-group">
-                            <input type="text" placeholder="Search ..." class="form-control">
-                            <div class="input-group-append">
-                                <span class="input-group-text">
-                                    <i class="la la-search search-icon"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </form>
+                    <h6 class="mt-2">{{ page_title }}</h6>
                     <ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
                         <li class="nav-item dropdown hidden-caret">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
@@ -152,7 +143,6 @@
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#"><i class="fa fa-power-off"></i> Logout</a>
                             </ul>
-                            <!-- /.dropdown-user -->
                         </li>
                     </ul>
                 </div>
@@ -161,28 +151,28 @@
         <div class="sidebar">
             <div class="scrollbar-inner sidebar-wrapper">
                 <ul class="nav">
-                    <li class="nav-item">
+                    <li class="nav-item{%if 'Index' in page_title %} active{% endif %}">
                         <a href="{% url 'index' %}">
                             <i class="la la-home"></i>
                             <p>Home</p>
                             <span class="badge badge-count">{{ server_count }}</span>
                         </a>
                     </li>
-                    <li class="nav-item active">
+                    <li class="nav-item{%if 'Server' in page_title %} active{% endif %}">
                         <a href="{% url 'server_overview' %}">
                             <i class="la la-server"></i>
                             <p>Servers</p>
                             <span class="badge badge-count">{{ server_count }}</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="{% url 'index' %}">
+                    <li class="nav-item{%if 'Changelog' in page_title %} active{% endif %}">
+                        <a href="{% url 'changelog_overview' %}">
                             <i class="la la-eye"></i>
-                            <p>Scans</p>
-                            <span class="badge badge-count">50</span>
+                            <p>Changelogs</p>
+                            <span class="badge badge-count">{{ changelog_count }}</span>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item{%if 'Alert' in page_title %} active{% endif %}">
                         <a href="{% url 'index' %}">
                             <i class="la la-bell"></i>
                             <p>Alerts</p>
@@ -228,29 +218,6 @@
         </div>
     </div>
     </div>
-    <!-- Modal -->
-    <div class="modal fade" id="modalUpdate" tabindex="-1" role="dialog" aria-labelledby="modalUpdatePro"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h6 class="modal-title"><i class="la la-frown-o"></i> Under Development</h6>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body text-center">
-                    <p>Currently the pro version of the <b>Ready Dashboard</b> Bootstrap is in progress development</p>
-                    <p>
-                        <b>We'll let you know when it's done</b>
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 <script src="{% static '/sentinel/assets/js/core/jquery.3.2.1.min.js' %}"></script>
 <script src="{% static '/sentinel/assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js' %}"></script>
@@ -265,6 +232,7 @@
 <script src="{% static '/sentinel/assets/js/plugin/chart-circle/circles.min.js' %}"></script>
 <script src="{% static '/sentinel/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js' %}"></script>
 <script src="{% static '/sentinel/assets/js/ready.min.js' %}"></script>
-<script src="{% static '/sentinel/assets/js/demo.js' %}"></script>
+{% block scripts %}
+{% endblock %}
 
 </html>
