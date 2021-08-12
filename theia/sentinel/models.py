@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.utils.timezone import now
+from django_celery_beat.models import PeriodicTask
+
+SCAN_FREQUENCY_CHOICES = (
+    ("minutes", "Minutes"),
+    ("hours", "Hours"),
+    ("days", "Days"),
+    ("weeks", "Weeks"),
+)
 
 
 class Server(models.Model):
@@ -11,13 +20,15 @@ class Server(models.Model):
     domain_name = models.CharField(
         "Fully Qualified Domain Name", blank=True, max_length=255
     )
-    description = models.TextField("Description")
+    description = models.CharField("Description", max_length=512)
     developer = models.CharField("Developer", max_length=255)
     sysadmin = models.CharField("Sysadmin", max_length=255)
-    date_added = models.DateTimeField("Date Added")
-    date_last_checked = models.DateTimeField("Last Checked")
+    date_added = models.DateTimeField("Date Added", default=now, editable=False)
+    date_last_checked = models.DateTimeField("Last Checked", default=now)
     scan_frequency_value = models.IntegerField("Scan Frequency Value", default=10)
-    scan_frequency_period = models.TextField("Scan Frequency Period", default="minutes")
+    scan_frequency_period = models.CharField(
+        "Scan Frequency Period", max_length=20, choices=SCAN_FREQUENCY_CHOICES
+    )
     check_open_ports = models.BooleanField("Check Open Ports", default=True)
     check_security_headers = models.BooleanField("Check Security Headers", default=True)
     check_ssl_certs = models.BooleanField("Check SSL Certificates", default=True)
@@ -33,12 +44,18 @@ class ServerProfile(models.Model):
         verbose_name = "ServerProfile"
 
     server = models.OneToOneField(Server, on_delete=models.CASCADE, primary_key=True)
-    is_up = models.BooleanField("Host Reachable", null=False, blank=False)
-    open_ports = models.JSONField("Open Ports", null=True, blank=True)
-    security_headers = models.JSONField("Security Headers", null=True, blank=True)
-    ssl_certs = models.JSONField("SSL Certificates", null=True, blank=True)
-    latency = models.JSONField("Latency Results", null=True, blank=True)
-    dns_records = models.JSONField("DNS Records", null=True, blank=True)
+    is_up = models.BooleanField(
+        "Host Reachable", null=False, blank=False, default=False
+    )
+    open_ports = models.JSONField("Open Ports", null=True, blank=True, default=None)
+    security_headers = models.JSONField(
+        "Security Headers", null=True, blank=True, default=None
+    )
+    ssl_certs = models.JSONField(
+        "SSL Certificates", null=True, blank=True, default=None
+    )
+    latency = models.JSONField("Latency Results", null=True, blank=True, default=None)
+    dns_records = models.JSONField("DNS Records", null=True, blank=True, default=None)
 
     def __str__(self):
         return f"{self.server.name} Profile"
@@ -48,11 +65,12 @@ class ProfileChangelog(models.Model):
     class Meta:
         verbose_name = "ProfileChangelog"
 
-    server = models.ForeignKey(Server, on_delete=models.CASCADE)
-    date_modified = models.DateTimeField("Date Modified")
+    server = models.ForeignKey(Server, on_delete=models.SET_NULL, null=True)
+    date_modified = models.DateTimeField("Date Modified", default=now, editable=False)
     changed_field = models.CharField("Changed Field", max_length=255)
     old_value = models.JSONField("Old Value", null=True, blank=True)
     new_value = models.JSONField("New Value", null=True, blank=True)
+    acknowledged = models.BooleanField("Acknowledged", default=False)
 
     def __str__(self):
         return f"{self.server.name} - {self.changed_field} - {self.date_modified}"
@@ -93,3 +111,14 @@ class AlertLog(models.Model):
 
     def __str__(self):
         return f"{self.alert_endpoint.name} - {self.id} - {self.timestamp}"
+
+
+class ServerTask(models.Model):
+    """Interim table to map tasks to server ids"""
+
+    server = models.ForeignKey(Server, on_delete=models.CASCADE)
+    task_name = models.CharField(max_length=255)
+    task = models.OneToOneField(PeriodicTask, null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.server.name} - {self.task_name}"

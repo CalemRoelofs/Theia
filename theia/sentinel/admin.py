@@ -8,6 +8,7 @@ from .models import ContactGroup
 from .models import ProfileChangelog
 from .models import Server
 from .models import ServerProfile
+from .models import ServerTask
 
 # Register your models here.
 
@@ -39,4 +40,9 @@ class AlertEndpointAdmin(admin.ModelAdmin):
 
 @admin.register(AlertLog)
 class AlertEndpointAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ServerTask)
+class ServerTaskAdmin(admin.ModelAdmin):
     pass
