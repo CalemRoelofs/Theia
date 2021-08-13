@@ -29,9 +29,13 @@
                                 <td>{{ log.id }}</td>
                                 <td>{{ log.date_modified}}</td>
                                 <td>
+                                    {%if log.server %}
                                     <a href="{% url 'server_view' server_id=log.server.id %}">
                                         {{ log.server.name}}
                                     </a>
+                                    {% else %}
+                                    DELETED
+                                    {% endif %}
                                 </td>
                                 <td>{{ log.changed_field }}</td>
                                 <td>
@@ -55,13 +59,6 @@
 </div>
 {% endblock %}
 {% block scripts %}
-let cookie = document.cookie
-let csrfToken = cookie.substring(cookie.indexOf('=') + 1)
-let checkbox = document.getElementById("checkbox-" + id)
-var xhttp = new XMLHttpRequest();
-xhttp.open("POST", "{% url 'ack_changelog' %}", true);
-xhttp.setRequestHeader("Content-Type", "application/json");
-xhttp.setRequestHeader('X-CSRFToken', csrfToken);
 <script type="text/javascript" language="javascript">
     $(document).ready(function () {
         $('input[type=checkbox][name=ack]').change(function () {
@@ -82,7 +79,6 @@ xhttp.setRequestHeader('X-CSRFToken', csrfToken);
                         $(inputbox).prop("disabled", true);
                     },
                     error: function (response) {
-                        console.log(response);
                         $.notify({
                             // options
                             title: 'Error',
@@ -103,39 +99,4 @@ xhttp.setRequestHeader('X-CSRFToken', csrfToken);
         });
     });
 </script>
-<!--
-    {
-        let cookie = document.cookie
-        let csrfToken = cookie.substring(cookie.indexOf('=') + 1)
-        let checkbox = document.getElementById("checkbox-" + id)
-        var xhttp = new XMLHttpRequest();
-        xhttp.open("POST", "{% url 'ack_changelog' %}", true);
-        xhttp.setRequestHeader("Content-Type", "application/json");
-        xhttp.setRequestHeader('X-CSRFToken', csrfToken);
-        xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                // Response
-                var response = JSON.parse(this.responseText);
-                console.log(response.message)
-                console.log("Acknowledged")
-                console.log(response.message != "Acknowledged")
-                if (response.message != "Acknowledged") {
-                    $.notify({
-                        message: response.message
-                    }, {
-                        type: 'danger'
-                    });
-
-                } else {
-                    checkbox.disabled = true;
-                    checkbox.checked = true;
-                }
-
-            }
-        };
-        var data = { id: id };
-        xhttp.send(JSON.stringify(data));
-    }
-</script>
--->
 {% endblock %}

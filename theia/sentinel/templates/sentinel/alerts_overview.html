@@ -1,0 +1,161 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load customfilters %}
+{% load widget_tweaks %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 order-xs-2">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="la la-info-circle la-lg"> </i>
+                        Alerts Overview
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#add_endpoint_modal">
+                            <i class="la la-plus la-lg"> </i> Add New Endpoint
+                        </button>
+                    </div>
+                </div>
+                {% for et in endpoint_types %}
+                <label for="{{ et.0 }}-table">{{ et.1 }} Webhooks</label>
+                <table class="table table-sm" id="{{ et.0 }}-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>URL</th>
+                            <th>Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for endpoint in alert_endpoints %}
+                        {% if endpoint.endpoint_type == et.0 %}
+                        <tr>
+                            <td>{{ endpoint.name}}</td>
+                            <td style="overflow:none;">{{ endpoint.endpoint_value }}</td>
+                            <td>
+                                {% if debug_flag %}
+                                <button class="btn btn-sm btn-warning" name="debug_button" value="{{ endpoint.id }}">
+                                    <span><i class="la la-bug"> Test</i></span>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 order-xs-1">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="la la-server la-lg"> </i>Contact Groups
+                </div>
+            </div>
+            <div class="card-body">
+                Hello
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="modal fade" id="add_endpoint_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Add an Alert Endpoint</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'create_alert_endpoint' %}" method="POST" id="add_endpoint_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{ server.id }}" name="id" />
+                    {% for field in add_endpoint_form %}
+                    <div class="form-group row">
+                        <label for="{{ field.auto_id }}" class="col-sm-4 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {% if field.field.widget.input_type == "checkbox" %}
+                            <input type="checkbox" checked data-toggle="toggle" data-size="md" name="{{ field.name }}"
+                                id="{{ field.auto_id }}">
+                            {% else %}
+                            {{ field|add_class:"form-control" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="document.getElementById('add_endpoint_form').submit()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if debug_flag %}
+<script type="text/javascript" language="javascript">
+    $(document).ready(function () {
+        $('button[name=debug_button]').click(function () {
+            let cookie = document.cookie;
+            let csrfToken = cookie.substring(cookie.indexOf('=') + 1);
+            $.ajax({
+                type: "POST",
+                url: '{% url "send_test_alert" %}',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                data: JSON.stringify({ id: $(this).val() }),
+                dataType: "json",
+                success: function (response) {
+                    console.log(response);
+                    $.notify({
+                        // options
+                        title: 'Success',
+                        message: 'Endpoint returned: ' + response.message,
+                        icon: 'la la-check-circle'
+                    }, {
+                        // settings
+                        type: 'success',
+                        placement: {
+                            from: 'top',
+                            align: 'right'
+                        },
+                        time: 1000,
+                    });
+                },
+                error: function (response) {
+                    console.log(response);
+
+                    $.notify({
+                        // options
+                        title: 'Error',
+                        message: 'Endpoint returned: ' + response.message,
+                        icon: 'la la-exclamation-circle'
+                    }, {
+                        // settings
+                        type: 'danger',
+                        placement: {
+                            from: 'top',
+                            align: 'right'
+                        },
+                        time: 1000,
+                    });
+                }
+            });
+        });
+    });
+
+</script>
+{% endif %}
+{% endblock %}

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import random
+import urllib.parse
 from datetime import datetime
 
 import requests
@@ -9,30 +10,26 @@ from .models import AlertLog
 from .models import ProfileChangelog
 
 
-def discord_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -> int:
-    """Function so send an alert via Discord to a configured Webhook.
+def _discord_notification(
+    endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
+) -> int:
+    """Private function to send a message to a Discord wehhook
 
     Args:
-        endpoint (AlertEndpoint): The endpoint object to get the details from.
-        changelog (ProfileChangelog): The chnage to send the alert about.
+        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "discord")
+        changelog (ProfileChangelog): The changelog to send the alert for.
+        message (str): The message to send to the webhook.
 
     Returns:
         int: The status code returned from Discord.
     """
     timestamp = datetime.now()
-    message = f"""
-    Alert:
-    \tServer:       {changelog.server_profile.server.name}
-    \tService:      {changelog.changed_field}
-    \tOld Value:    {changelog.old_value}
-    \tNew Value:    {changelog.new_value}
-    """
     headers = {"content-type": "application/json"}
     payload = {
         "content": f"{message}",
         "nonce": random.randint(10000, 99999),
         "embed": {
-            "title": "LiveWire Notification",
+            "title": "Theia Notification",
             "description": f'Sent at {timestamp.strftime("%Y-%m-%d %H:%M:%S")}',
         },
     }
@@ -40,7 +37,7 @@ def discord_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
         timestamp=timestamp,
-        server=changelog.server_profile.server,
+        server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
         status_code=response.status_code,
@@ -48,15 +45,21 @@ def discord_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -
     return response.status_code
 
 
-def msteams_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -> int:
-    timestamp = datetime.now()
-    message = f"""
-    # Alert: Change Detected!\n
-    \tServer:       {changelog.server_profile.server.name}\n
-    \tService:      {changelog.changed_field}\n
-    \tOld Value:    {changelog.old_value}\n
-    \tNew Value:    {changelog.new_value}\n
+def _msteams_notification(
+    endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
+) -> int:
+    """Private function to send a message to a Microsoft Teams wehhook
+
+    Args:
+        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "msteams")
+        changelog (ProfileChangelog): The changelog to send the alert for.
+        message (str): The message to send to the webhook.
+
+    Returns:
+        int: The status code returned from Microsoft.
     """
+    timestamp = datetime.now()
+
     headers = {"content-type": "application/json"}
     payload = {
         "type": "message",
@@ -105,7 +108,7 @@ def msteams_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": changelog.server_profile.server.name,
+                                            "text": changelog.server.name,
                                             "wrap": True,
                                         },
                                         {
@@ -135,9 +138,89 @@ def msteams_notification(endpoint: AlertEndpoint, changelog: ProfileChangelog) -
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
         timestamp=timestamp,
-        server=changelog.server_profile.server,
+        server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
         status_code=response.status_code,
     ).save()
     return response.status_code
+
+
+def _slack_notification(
+    endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
+) -> int:
+    """Private function to send a message to a Slack wehhook
+
+    Args:
+        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "slack")
+        changelog (ProfileChangelog): The changelog to send the alert for.
+        message (str): The message to send to the webhook.
+
+    Returns:
+        int: The status code returned from Slack.
+    """
+    timestamp = datetime.now()
+    headers = {"content-type": "application/json"}
+
+    payload = {
+        "text": message,
+        "username": "Theia Notifications",
+        "icon_emoji": ":bell:",
+    }
+
+    response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
+
+    AlertLog(
+        timestamp=timestamp,
+        server=changelog.server,
+        alert_endpoint=endpoint,
+        message=message,
+        status_code=response.status_code,
+    ).save()
+
+    return response.status_code
+
+
+def _telegram_notification(
+    endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
+) -> int:
+    """Private function to send a message to a Telegram wehhook
+
+    Args:
+        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "telegram")
+        changelog (ProfileChangelog): The changelog to send the alert for.
+        message (str): The message to send to the webhook.
+
+    Returns:
+        int: The status code returned from Telegram.
+    """
+    timestamp = datetime.now()
+    url_encoded_message = urllib.parse.quote(message)
+
+    response = requests.get(endpoint.endpoint_value + url_encoded_message)
+
+    AlertLog(
+        timestamp=timestamp,
+        server=changelog.server,
+        alert_endpoint=endpoint,
+        message=message,
+        status_code=response.status_code,
+    ).save()
+
+    return response.status_code
+
+
+def send_alert(
+    endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
+) -> int:
+
+    if endpoint.endpoint_type == "discord":
+        return _discord_notification(endpoint, changelog, message)
+    elif endpoint.endpoint_type == "msteams":
+        return _msteams_notification(endpoint, changelog, message)
+    elif endpoint.endpoint_type == "slack":
+        return _slack_notification(endpoint, changelog, message)
+    elif endpoint.endpoint_type == "telegram":
+        return _telegram_notification(endpoint, changelog, message)
+    else:
+        return 200

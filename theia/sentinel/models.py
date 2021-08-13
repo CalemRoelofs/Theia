@@ -10,6 +10,14 @@ SCAN_FREQUENCY_CHOICES = (
     ("weeks", "Weeks"),
 )
 
+ENDPOINT_TYPE_CHOICES = (
+    ("discord", "Discord"),
+    ("msteams", "Microsoft Teams"),
+    ("slack", "Slack"),
+    ("telegram", "Telegram"),
+    ("email", "Email"),
+)
+
 
 class Server(models.Model):
     class Meta:
@@ -65,7 +73,7 @@ class ProfileChangelog(models.Model):
     class Meta:
         verbose_name = "ProfileChangelog"
 
-    server = models.ForeignKey(Server, on_delete=models.SET_NULL, null=True)
+    server = models.ForeignKey(Server, on_delete=models.CASCADE, null=True)
     date_modified = models.DateTimeField("Date Modified", default=now, editable=False)
     changed_field = models.CharField("Changed Field", max_length=255)
     old_value = models.JSONField("Old Value", null=True, blank=True)
@@ -90,10 +98,18 @@ class AlertEndpoint(models.Model):
     class Meta:
         verbose_name = "AlertEndpoint"
 
-    name = models.TextField("Name", null=False, blank=False)
-    endpoint_type = models.TextField("Endpoint Type", null=False, blank=False)
-    endpoint_value = models.TextField("Endpoint Value", null=False, blank=False)
-    contact_groups = models.ManyToManyField(ContactGroup)
+    name = models.CharField("Name", max_length=512, null=False, blank=False)
+    endpoint_type = models.CharField(
+        "Endpoint Type",
+        max_length=30,
+        null=False,
+        blank=False,
+        choices=ENDPOINT_TYPE_CHOICES,
+    )
+    endpoint_value = models.CharField(
+        "Webhook URL/Email Address", max_length=512, null=False, blank=False
+    )
+    contact_groups = models.ManyToManyField(ContactGroup, blank=True)
 
     def __str__(self):
         return self.name

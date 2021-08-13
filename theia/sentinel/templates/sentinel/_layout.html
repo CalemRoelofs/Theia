@@ -169,11 +169,11 @@
                         <a href="{% url 'changelog_overview' %}">
                             <i class="la la-eye"></i>
                             <p>Changelogs</p>
-                            <span class="badge badge-count">{{ changelog_count }}</span>
+                            <span class="badge badge-count">{{ unack_changelog_count }}</span>
                         </a>
                     </li>
                     <li class="nav-item{%if 'Alert' in page_title %} active{% endif %}">
-                        <a href="{% url 'index' %}">
+                        <a href="{% url 'alerts_overview' %}">
                             <i class="la la-bell"></i>
                             <p>Alerts</p>
                             <span class="badge badge-count">{{ alert_count }}</span>
