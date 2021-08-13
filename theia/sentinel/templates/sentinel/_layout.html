@@ -155,7 +155,6 @@
                         <a href="{% url 'index' %}">
                             <i class="la la-home"></i>
                             <p>Home</p>
-                            <span class="badge badge-count">{{ server_count }}</span>
                         </a>
                     </li>
                     <li class="nav-item{%if 'Server' in page_title %} active{% endif %}">
@@ -169,7 +168,7 @@
                         <a href="{% url 'changelog_overview' %}">
                             <i class="la la-eye"></i>
                             <p>Changelogs</p>
-                            <span class="badge badge-count">{{ unack_changelog_count }}</span>
+                            <span id="changlog-count" class="badge badge-count">{{ unack_changelog_count }}</span>
                         </a>
                     </li>
                     <li class="nav-item{%if 'Alert' in page_title %} active{% endif %}">

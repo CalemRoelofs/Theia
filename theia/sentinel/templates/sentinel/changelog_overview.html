@@ -66,6 +66,8 @@
             if ($(this).prop("checked")) {
                 let cookie = document.cookie;
                 let csrfToken = cookie.substring(cookie.indexOf('=') + 1);
+                let changelogCount = document.getElementById("changlog-count");
+                let changelogCountValue = parseInt(changelogCount.innerHTML)
                 $.ajax({
                     type: "POST",
                     url: '{% url "ack_changelog" %}',
@@ -77,6 +79,8 @@
                     dataType: "JSON",
                     success: function (response) {
                         $(inputbox).prop("disabled", true);
+                        changelogCountValue--;
+                        changelogCount.innerHTML = changelogCountValue;
                     },
                     error: function (response) {
                         $.notify({
