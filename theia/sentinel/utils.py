@@ -2,10 +2,13 @@
 import json
 from datetime import datetime
 
+from celery import current_app
 from django.utils.timezone import now
 from django_celery_beat.models import IntervalSchedule
 from django_celery_beat.models import PeriodicTask
+from kombu.utils.json import loads
 
+from .alerts import send_alert
 from .models import ProfileChangelog
 from .models import Server
 from .models import ServerTask
@@ -42,14 +45,24 @@ def log_changes(server: Server, changed_field: str, new_value):
 
     server.serverprofile.save()
 
-    log = ProfileChangelog(
+    changelog = ProfileChangelog(
         server=server,
         changed_field=changed_field,
         old_value=old_value,
         new_value=new_value,
     )
-    log.save()
+    changelog.save()
 
+    message = f"""
+    Alert: Change Detected!\n
+    \tServer:       {changelog.server.name}\n
+    \tService:      {changelog.changed_field}\n
+    \tOld Value:    {changelog.old_value}\n
+    \tNew Value:    {changelog.new_value}\n
+    """
+
+    for endpoint in server.contact_group.alert_endpoints.all():
+        send_alert(endpoint, changelog, message)
     return None
 
 
@@ -60,6 +73,7 @@ def create_or_update_tasks(server: Server):
     Args:
         server (Server): The Server to map the tasks against
     """
+    current_app.loader.import_default_modules()
     interval, _ = IntervalSchedule.objects.get_or_create(
         every=server.scan_frequency_value, period=server.scan_frequency_period
     )
@@ -84,6 +98,7 @@ def create_or_update_tasks(server: Server):
             open_ports_task.save()
             server_task.task = open_ports_task
             server_task.save()
+            _run_task_on_creation(server_task.task)
         else:
             # Otherwise just update the interval
             server_task.task.interval = interval
@@ -106,6 +121,7 @@ def create_or_update_tasks(server: Server):
             get_headers_task.save()
             server_task.task = get_headers_task
             server_task.save()
+            _run_task_on_creation(server_task.task)
         else:
             server_task.task.interval = interval
             server_task.task.save()
@@ -127,6 +143,7 @@ def create_or_update_tasks(server: Server):
             ssl_certs_task.save()
             server_task.task = ssl_certs_task
             server_task.save()
+            _run_task_on_creation(server_task.task)
         else:
             server_task.task.interval = interval
             server_task.task.save()
@@ -148,8 +165,32 @@ def create_or_update_tasks(server: Server):
             dns_records_task.save()
             server_task.task = dns_records_task
             server_task.save()
+            _run_task_on_creation(server_task.task)
         else:
             server_task.task.interval = interval
             server_task.task.save()
 
     return None
+
+
+def _run_task_on_creation(task: PeriodicTask):
+    # This is the only way to get the tasks to run
+    # immediately at the moment because of ciruclar imports.
+    # This is tech debt that WILL need to be refactored.
+    task_meta = [
+        (
+            current_app.tasks.get(task.task),
+            loads(task.args),
+            loads(task.kwargs),
+            task.queue,
+        )
+    ]
+
+    task_ids = [
+        task.apply_async(args=args, kwargs=kwargs, queue=queue)
+        if queue and len(queue)
+        else task.apply_async(args=args, kwargs=kwargs)
+        for task, args, kwargs, queue in task_meta
+    ]
+
+    return task_ids
