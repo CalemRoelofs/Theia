@@ -1,0 +1,224 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load customfilters %}
+{% load widget_tweaks %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="la la-info-circle la-lg"> </i>
+                        Alerts Overview
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#add_endpoint_modal">
+                            <i class="la la-plus la-lg"> </i> Add New Endpoint
+                        </button>
+                    </div>
+                </div>
+                {% for et in endpoint_types %}
+                <hr class="py-0 my-0">
+                <label for="{{ et.0 }}-table"
+                    class="bg-primary text-light col-sm-12 col-form-label col-form-label-lg">{{ et.1 }}
+                    Webhooks</label>
+                <table class="table" id="{{ et.0 }}-table">
+                    <thead>
+                        <tr>
+                            <th colspan="1">Name</th>
+                            <th colspan="4">URL</th>
+                            <th colspan="1">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for endpoint in alert_endpoints %}
+                        {% if endpoint.endpoint_type == et.0 %}
+                        <tr>
+                            <td>{{ endpoint.name}}</td>
+                            <td colspan="4">{{ endpoint.endpoint_value }}</td>
+                            <td>
+                                {% if debug_flag %}
+                                <button class="btn btn-sm btn-warning debug-button" name="{{ endpoint.name }}"
+                                    value="{{ endpoint.id }}">
+                                    <i class="la la-bug"> </i> Test
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="la la-users la-lg"> </i>Contact Groups
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#add_group_modal">
+                            <i class="la la-plus la-lg"> </i> Add New Group
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <th>Name</th>
+                            <th colspan="2">Options</th>
+                        </thead>
+                        <tbody>
+                            {% for cg in contact_groups %}
+                            <tr>
+                                <td>{{ cg.name }}</td>
+                                <td colspan="2">
+                                    <div class="d-flex justify-content-start">
+                                        <button class="btn btn-sm btn-success mx-1" id="edit-cg-button"
+                                            value="{{ cg.id }}">
+                                            <i class="la la-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-danger mx-1" id="delete-cg-button"
+                                            value="{{ cg.id }}">
+                                            <i class="la la-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="add_endpoint_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Add an Alert Endpoint</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'create_alert_endpoint' %}" method="POST" id="add_endpoint_form">
+                    {% csrf_token %}
+                    {% for field in add_endpoint_form %}
+                    <div class="form-group row">
+                        <label for="{{ field.auto_id }}" class="col-sm-4 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {% if field.field.widget.input_type == "checkbox" %}
+                            <input type="checkbox" checked data-toggle="toggle" data-size="md" name="{{ field.name }}"
+                                id="{{ field.auto_id }}">
+                            {% else %}
+                            {{ field|add_class:"form-control" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="document.getElementById('add_endpoint_form').submit()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="add_group_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Add a Contact Group</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'create_contact_group' %}" method="POST" id="add_group_form">
+                    {% csrf_token %}
+                    {% for field in add_group_form %}
+                    <div class="form-group row">
+                        <label for="{{ field.auto_id }}" class="col-sm-4 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {{ field|add_class:"form-control" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="document.getElementById('add_group_form').submit()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if debug_flag %}
+<script type="text/javascript" language="javascript">
+    $(document).ready(function () {
+        $('.debug-button').click(function () {
+            let cookie = document.cookie;
+            let csrfToken = cookie.substring(cookie.indexOf('=') + 1);
+            var $btnName = $(this).attr('name');
+            $.ajax({
+                type: "POST",
+                url: '{% url "send_test_alert" %}',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                data: JSON.stringify({ id: $(this).val() }),
+                dataType: "json",
+                success: function (response) {
+                    console.log(response);
+                    $.notify({
+                        // options
+                        title: 'Success',
+                        message: $btnName + ' returned: ' + response.message,
+                        icon: 'la la-check-circle'
+                    }, {
+                        // settings
+                        type: 'success',
+                        placement: {
+                            from: 'top',
+                            align: 'right'
+                        },
+                        time: 1000,
+                    });
+                },
+                error: function (response) {
+                    console.log(response);
+
+                    $.notify({
+                        // options
+                        title: 'Error',
+                        message: $btnName + ' returned: ' + response.message,
+                        icon: 'la la-exclamation-circle'
+                    }, {
+                        // settings
+                        type: 'danger',
+                        placement: {
+                            from: 'top',
+                            align: 'right'
+                        },
+                        time: 1000,
+                    });
+                }
+            });
+        });
+    });
+
+</script>
+{% endif %}
+{% endblock %}

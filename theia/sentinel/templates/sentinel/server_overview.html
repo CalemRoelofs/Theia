@@ -1,0 +1,110 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Server List
+                        <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
+                            data-target="#exampleModalCenter">
+                            Add New Server
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col-1">ID</th>
+                                <th scope="col-2">Name</th>
+                                <th scope="col-2">FQDN</th>
+                                <th scope="col-2">IPv4</th>
+                                <th scope="col-2">Last Checked</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for server in servers %}
+                            <tr>
+                                <td><a href="{% url 'server_view' server_id=server.id %}">{{ server.id }}</a></td>
+                                <td>{{ server.name }}</td>
+                                <td>{{ server.domain_name }}</td>
+                                <td>{{ server.ip_address }}</td>
+                                <td>{{ server.date_last_checked }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Recent Changes</div>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Timestamp</th>
+                                <th scope="col">Server</th>
+                                <th scope="col">Changed Field</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in changelog %}
+                            <tr>
+                                <td>{{ log.date_modified }}</td>
+                                <td>{{ log.server.name }}</td>
+                                <td>{{ log.changed_field }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Add a new server</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'create_server' %}" method="POST" id="add_server_form">
+                    {% csrf_token %}
+                    {% for field in add_server_form %}
+                    <div class="form-group row">
+                        <label for="{{ field.auto_id }}" class="col-sm-4 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-8">
+                            {% if field.field.widget.input_type == "checkbox" %}
+                            <input type="checkbox" checked data-toggle="toggle" data-size="md" name="{{ field.name }}"
+                                id="{{ field.auto_id }}">
+                            {% else %}
+                            {{ field|add_class:"form-control" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="document.getElementById('add_server_form').submit()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
