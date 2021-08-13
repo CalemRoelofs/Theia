@@ -2,6 +2,7 @@
 from django.forms import ModelForm
 
 from .models import AlertEndpoint
+from .models import ContactGroup
 from .models import Server
 
 
@@ -14,4 +15,10 @@ class ServerForm(ModelForm):
 class AlertEndpointForm(ModelForm):
     class Meta:
         model = AlertEndpoint
+        exclude = []
+
+
+class ContactGroupForm(ModelForm):
+    class Meta:
+        model = ContactGroup
         exclude = []

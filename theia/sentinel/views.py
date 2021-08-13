@@ -11,6 +11,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.utils.timezone import now
 from sentinel.forms import AlertEndpointForm
+from sentinel.forms import ContactGroupForm
 from sentinel.forms import ServerForm
 from sentinel.models import AlertEndpoint
 from sentinel.models import AlertLog
@@ -34,6 +35,9 @@ def index(request):
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
+        "total_alert_count": AlertLog.objects.count(),
+        "total_changelog_count": ProfileChangelog.objects.count(),
     }
     return render(request, "sentinel/index.html", context=context)
 
@@ -47,6 +51,7 @@ def server_overview(request):
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
         "servers": servers,
         "changelog": changelog,
         "add_server_form": ServerForm(),
@@ -59,12 +64,14 @@ def server_view(request, server_id: int):
     changelog = ProfileChangelog.objects.filter(server=server.id).order_by(
         "-date_modified"
     )
+
     context = {
         "page_title": f"Server - {server.name}",
         "server_count": Server.objects.count(),
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
         "server": server,
         "changelog": changelog,
         "edit_server_form": ServerForm(instance=server),
@@ -112,6 +119,7 @@ def server_logs(server_id):
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
         "server": server,
         "changelog": changelog,
         "edit_server_form": ServerForm(instance=server),
@@ -127,6 +135,7 @@ def changelog_overview(request):
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
         "changelog": changelog,
     }
     return render(request, "sentinel/changelog_overview.html", context=context)
@@ -155,9 +164,12 @@ def alerts_overview(request):
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
         "alert_endpoints": endpoints,
+        "contact_groups": ContactGroup.objects.all(),
         "endpoint_types": ENDPOINT_TYPE_CHOICES,
         "add_endpoint_form": AlertEndpointForm(),
+        "add_group_form": ContactGroupForm(),
         "debug_flag": settings.DEBUG,
     }
     return render(request, "sentinel/alerts_overview.html", context=context)
@@ -179,7 +191,7 @@ def send_test_alert(request):
     )
 
     message = f"""
-    # Alert: Change Detected!\n
+    Alert: Change Detected!\n
     \tServer:       {test_changelog.server.name}\n
     \tService:      {test_changelog.changed_field}\n
     \tOld Value:    {test_changelog.old_value}\n
@@ -191,7 +203,7 @@ def send_test_alert(request):
     except Http404:
         return JsonResponse({"message": f"Could not find id: {id}"})
 
-    status_code = send_alert(endpoint, test_changelog)
+    status_code = send_alert(endpoint, test_changelog, message)
     server.name = old_name
     server.save()
     return JsonResponse({"message": f"{status_code}"})
@@ -216,4 +228,22 @@ def delete_alert_endpoint(request):
 
 
 def alerts_logs():
+    pass
+
+
+def create_contact_group(request):
+    if request.method == "POST":
+        form = ContactGroupForm(request.POST)
+        if form.is_valid():
+            form.save()
+        else:
+            return form.errors
+    return redirect("alerts_overview")
+
+
+def edit_contact_group(request):
+    pass
+
+
+def delete_contact_group(request):
     pass
