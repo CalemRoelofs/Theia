@@ -30,4 +30,29 @@ cd theia
 celery -A theia beat -l INFO &
 celery -A theia worker -l INFO &
 python manage.py runserver
-```
+```  
+  
+## To-Do  
+- Test validations for:  
+    - Adding Servers  
+    - Adding Webhooks  
+
+- Implement:  
+    - Deleting Servers  
+    - Modifying Webhooks  
+    - Deleting Webhooks  
+    - Modifying ContactGroups  
+    - Deleting ContactGroups  
+    - Viewing all changelogs for a server  
+    - Exporting changelog history for a server  
+    - Viewing alert logs  
+  
+- Bugs:  
+    - Messages aren't rendering in Teams for some reason despite being returned 200  
+  
+- Nice to have:  
+    - Format messages properly  
+    - Add a basic login system  
+    - Allow users to see the profile history for a server at a given date/time.  
+    - Figure out what else to put in the top navbar.  
+    - Add pagination for changelogs and alertlogs  
