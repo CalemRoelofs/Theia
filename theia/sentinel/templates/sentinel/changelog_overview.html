@@ -50,7 +50,7 @@
                                     </label>
 
                                 </td>
-                                <td><button class="btn btn-sm btn-info mx-1" data-toggle="collapse"
+                                <td><button class="btn btn-link btn-info mx-1" data-toggle="collapse"
                                         data-target=".log{{ log.id }}">
                                         <i class="la la-search"></i> Show Results
                                     </button></td>
@@ -70,7 +70,7 @@
                                                         <span
                                                             class="text-{% if port in log.new_value  %}danger{% else %}dark{% endif %}">
                                                             {{port }}
-                                                        </span>
+                                                        </span><br>
                                                         {% endfor %}
                                                     {% endif %}
                                                 </td>
@@ -80,7 +80,7 @@
                                                     <span
                                                         class="text-{% if port in log.new_value  %}success{% else %}dark{% endif %}">
                                                         {{ port }}
-                                                    </span>
+                                                    </span><br>
                                                     {% endfor %}
                                                 </td>
                                                 {% elif log.changed_field == "dns_records" %}
