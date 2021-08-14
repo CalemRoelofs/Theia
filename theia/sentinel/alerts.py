@@ -36,7 +36,6 @@ def _discord_notification(
 
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
-        timestamp=timestamp,
         server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
@@ -58,8 +57,6 @@ def _msteams_notification(
     Returns:
         int: The status code returned from Microsoft.
     """
-    timestamp = datetime.now()
-
     headers = {"content-type": "application/json"}
     payload = {
         "type": "message",
@@ -137,7 +134,6 @@ def _msteams_notification(
     }
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
-        timestamp=timestamp,
         server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
@@ -159,7 +155,6 @@ def _slack_notification(
     Returns:
         int: The status code returned from Slack.
     """
-    timestamp = datetime.now()
     headers = {"content-type": "application/json"}
 
     payload = {
@@ -171,7 +166,6 @@ def _slack_notification(
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
 
     AlertLog(
-        timestamp=timestamp,
         server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
@@ -194,13 +188,11 @@ def _telegram_notification(
     Returns:
         int: The status code returned from Telegram.
     """
-    timestamp = datetime.now()
     url_encoded_message = urllib.parse.quote(message)
 
     response = requests.get(endpoint.endpoint_value + url_encoded_message)
 
     AlertLog(
-        timestamp=timestamp,
         server=changelog.server,
         alert_endpoint=endpoint,
         message=message,
