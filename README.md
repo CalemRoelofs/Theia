@@ -20,6 +20,7 @@ Theia is going to fulfil a number of roles:
         - Slack
         - Discord
         - Telegram
+        - Microsoft Teams
         - Email with SMTP
 
 The basic idea is to have an application in place that not only tracks what infrastructure is in place, but also maintains historic records of certain changes that happen to that infrastructure for auditing at a later date, or alerting administrators immediately of something unexpected.
@@ -50,3 +51,4 @@ python manage.py runserver
     - Allow users to see the profile history for a server at a given date/time.  
     - Figure out what else to put in the top navbar.  
     - Add pagination for changelogs and alertlogs  
+    - Write a nicer and more descriptive README
