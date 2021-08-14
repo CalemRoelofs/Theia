@@ -184,14 +184,8 @@
                         <tr>
                             <th>{{ k }}</th>
                             <td>
-                                {% for record in v %}
-                                    {% if k == "SAN" %}
-                                        {% for san in record %}
-                                        <span>{{ san }}</span><br>
-                                        {% endfor %}
-                                    {% else %}
+                                {% for record in v %}                                    
                                     <span>{{ record }}</span><br>
-                                    {% endif %}
                                 {% endfor %}
                             </td>
                         </tr>
@@ -211,7 +205,15 @@
                         {% for k,v in server.serverprofile.ssl_certs.items %}
                         <tr>
                             <th>{{ k }}</th>
-                            <td>{{ v }}</td>
+                            <td>
+                            {% if k == "SAN" %}
+                                {% for san in v %}
+                                <span>{{ san }}</span><br>
+                                {% endfor %}
+                            {% else %}
+                                <span>{{ v }}</span>
+                            {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </table>
