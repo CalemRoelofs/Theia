@@ -67,10 +67,15 @@
             </div>
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title"><i class="la la-history la-lg"> </i> Changelog</div>
+                    <div class="card-title">
+                        <span><i class="la la-history la-lg"> </i> Recent Changes</span>
+                        <a href="{% url 'server_logs' server_id=server.id %}" class="btn btn-primary pull-right">
+                            <i class="la la-search la-lg"> </i> See More
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <table class="table mt-3 text-wrap">
+                    <table class="table text-wrap">
                         <thead>
                             <tr>
                                 <th scope="col-xl-3">Timestamp</th>
@@ -180,7 +185,13 @@
                             <th>{{ k }}</th>
                             <td>
                                 {% for record in v %}
-                                <span>{{ record }}</span><br>
+                                    {% if k == "SAN" %}
+                                        {% for san in record %}
+                                        <span>{{ san }}</span><br>
+                                        {% endfor %}
+                                    {% else %}
+                                    <span>{{ record }}</span><br>
+                                    {% endif %}
                                 {% endfor %}
                             </td>
                         </tr>
