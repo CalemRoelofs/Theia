@@ -136,12 +136,12 @@ def ssl_certs(server_id: int):
         return f"Failed to make SSL connection to {server.domain_name} for {server}!"
 
     ssl_results = {
-        "common_name": get_common_name(hostinfo.cert),
+        "Common Name": get_common_name(hostinfo.cert),
         "SAN": get_alt_names(hostinfo.cert),
-        "issuer": get_issuer(hostinfo.cert),
-        "not_before": hostinfo.cert.not_valid_before.strftime("%Y-%m-%d %H:%M:%S"),
-        "not_after": hostinfo.cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S"),
-        "expired": not (
+        "Issuer": get_issuer(hostinfo.cert),
+        "Not Before": hostinfo.cert.not_valid_before.strftime("%Y-%m-%d %H:%M:%S"),
+        "Not After": hostinfo.cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S"),
+        "Expired": not (
             hostinfo.cert.not_valid_before
             < datetime.now()
             < hostinfo.cert.not_valid_after
@@ -157,7 +157,7 @@ def ssl_certs(server_id: int):
         return "SUCCESS"
 
     for record in ssl_results.keys():
-        if old_records["expired"] == ssl_results["expired"]:
+        if old_records["Expired"] == ssl_results["Expired"]:
             continue
         if Counter(ssl_results[record]) == Counter(old_records[record]):
             continue
