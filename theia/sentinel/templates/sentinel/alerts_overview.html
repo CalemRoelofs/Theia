@@ -102,9 +102,9 @@
                                     </div>
                                 </td>
                             </tr>
-                            <tr class="my-0 py-0">
-                                <td colspan="3" class="my-0 py-0">
-                                    <div id="collapse my-0 py-0" class="collapse cg{{ cg.id }}">
+                            <tr>
+                                <td colspan="3">
+                                    <div id="collapse" class="collapse cg{{ cg.id }}">
                                         {% for endpoint in cg.alert_endpoints.all %}
                                         <p class="text-sm">- {{ endpoint.name }}</p>
                                         {% endfor %}
