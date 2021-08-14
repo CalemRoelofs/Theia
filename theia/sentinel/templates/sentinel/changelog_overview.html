@@ -1,5 +1,6 @@
 {% extends 'sentinel/_layout.html' %}
 {% load static %}
+{% load customfilters %}
 {% load widget_tweaks %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
@@ -8,7 +9,7 @@
         <div class="col">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Server List
+                    <div class="card-title">Changelog
                         <button type="button" class="btn btn-primary pull-right">
                             Do Something
                         </button>
@@ -22,10 +23,11 @@
                             <th>Server</th>
                             <th>Changed Field</th>
                             <th>Acknowledged</th>
+                            <th></th>
                         </thead>
                         <tbody>
                             {% for log in changelog %}
-                            <tr>
+                            <tr class="accordion-toggle">
                                 <td>{{ log.id }}</td>
                                 <td>{{ log.date_modified}}</td>
                                 <td>
@@ -47,6 +49,197 @@
                                         <span class="form-check-sign"></span>
                                     </label>
 
+                                </td>
+                                <td><button class="btn btn-sm btn-info mx-1" data-toggle="collapse"
+                                        data-target=".log{{ log.id }}">
+                                        <i class="la la-search"></i> Show Results
+                                    </button></td>
+                            </tr>
+                            <tr>
+                                <td colspan="6">
+                                    <div id="collapse" class="collapse log{{ log.id }} w-100">
+                                        <table class="w-100">
+                                            <tr>
+                                                {% if log.changed_field == "open_ports" %}
+                                                <th colspan="1">Old Value</th>
+                                                <td colspan="2">
+                                                    {% if log.old_value == None %}
+                                                    <span>No data</span>
+                                                    {% else %}
+                                                        {% for port in log.old_value %}
+                                                        <span
+                                                            class="text-{% if port in log.new_value  %}danger{% else %}dark{% endif %}">
+                                                            {{port }}
+                                                        </span>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                <th colspan="1">New Value</th>
+                                                <td colspan="2">
+                                                    {% for port in log.new_value %}
+                                                    <span
+                                                        class="text-{% if port in log.new_value  %}success{% else %}dark{% endif %}">
+                                                        {{ port }}
+                                                    </span>
+                                                    {% endfor %}
+                                                </td>
+                                                {% elif log.changed_field == "dns_records" %}
+                                                <th colspan="1">Old Value</th>
+                                                <td colspan="2">
+                                                    {% if not log.old_value %}
+                                                    <span>No Data</span>
+                                                    {% else %}
+                                                        {% for k,v in log.old_value.items %}
+                                                            {% if k not in log.new_value.keys or v != log.new_value|get_item:k%}
+                                                            <span>{{ k }}: </span><br>
+                                                                {% for record in v %}
+                                                                <span
+                                                                    class="text-{% if k not in log.new_value.keys or v != log.new_value|get_item:k %}danger{% else %}dark{% endif %}">
+                                                                    {{ record }}
+                                                                </span><br>
+                                                                {% endfor %}
+                                                                {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                                <br />
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                <th colspan="1">New Value</th>
+                                                <td colspan="2">
+                                                    {% for k,v in log.new_value.items %}
+                                                        {% if not log.old_value %}
+                                                        <span>{{ k }}: </span><br>
+                                                            {% for record in v %}
+                                                            <span class="text-success">
+                                                                {{ record }}
+                                                            </span><br>
+                                                            {% endfor %}
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                            <br />
+                                                            {% endif %}
+                                                        {% elif k not in log.old_value.keys or v != log.old_value|get_item:k %}
+                                                        <span>{{ k }}: </span><br>
+                                                            {% for record in v %}
+                                                            <span class="text-success">
+                                                                {{ record }}
+                                                            </span><br>
+                                                            {% endfor %}
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                            <br />
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </td>
+
+                                                {% elif log.changed_field == "ssl_certs" %}
+
+                                                <th colspan="1">Old Value</th>
+                                                <td colspan="2">
+                                                    {% if not log.old_value %}
+                                                    <span>No Data</span>
+                                                    {% else %}
+                                                        {% for k,v in log.old_value.items %}
+                                                            {% if k not in log.new_value.keys or v != log.new_value|get_item:k%}
+                                                            <span>{{ k }}: </span><br>
+                                                                {% if k == "San" %}
+                                                                    {% for record in v %}
+                                                                    <span
+                                                                        class="text-{% if k not in log.new_value.keys or v != log.new_value|get_item:k %}danger{% else %}dark{% endif %}">
+                                                                        {{ record }}
+                                                                    </span><br>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                <span>{{ v }}
+                                                                {% endif %}
+                                                                {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                                <br />
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                <th colspan="1">New Value</th>
+                                                <td colspan="2">
+                                                    {% for k,v in log.new_value.items %}
+                                                        {% if not log.old_value %}
+                                                        <span>{{ k }}: </span><br>
+                                                            {% if k == "SAN" %}
+                                                                {% for record in v %}
+                                                                <span class="text-success">
+                                                                    {{ record }}
+                                                                </span><br>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                            <span class="text-success">
+                                                                {{ v }}
+                                                            </span><br>
+                                                            {% endif %}
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                                <br />
+                                                            {% endif %}
+                                                        {% elif k not in log.old_value.keys or v != log.old_value|get_item:k %}
+                                                            <span>{{ k }}: </span><br>
+                                                            {% if k == "san" %}
+                                                                {% for record in v %}
+                                                                <span class="text-success">
+                                                                    {{ record }}
+                                                                </span><br>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                            <span class="text-success">
+                                                                {{ v }}
+                                                            </span><br>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                                {% else %}
+                                                <th colspan="1">Old Value</th>
+                                                <td colspan="2">
+                                                    {% if not log.old_value %}
+                                                    <span>No Data</span>
+                                                    {% else %}
+                                                        {% for k,v in log.old_value.items %}
+                                                            {% if k not in log.new_value.keys or v != log.new_value|get_item:k%}
+                                                            <span>{{ k|title }}: </span><br>
+                                                            <span
+                                                                class="text-{% if k not in log.new_value.keys or v != log.new_value|get_item:k %}danger{% else %}dark{% endif %}">
+                                                                {{ v }}
+                                                            </span>
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                            <br />
+                                                            {% endif %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                <th colspan="1">New Value</th>
+                                                <td colspan="2">
+                                                    {% for k,v in log.new_value.items %}
+                                                        {% if not log.old_value %}
+                                                        <span>{{ k|title }}: </span><br>
+                                                        <span class="text-success">
+                                                            {{ v }}
+                                                        </span>
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                            <br />
+                                                            {% endif %}
+                                                        {% elif k not in log.old_value.keys or v != log.old_value|get_item:k %}
+                                                        <span>{{ k|title }}: </span><br>
+                                                        <span class="text-success">
+                                                            {{ v }}
+                                                        </span>
+                                                            {% if not forloop.last or log.new_value.keys.count > 1 %}
+                                                            <br />
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                        </table>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
