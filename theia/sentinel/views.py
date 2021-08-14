@@ -63,8 +63,7 @@ def server_view(request, server_id: int):
     server = get_object_or_404(Server, id=server_id)
     changelog = ProfileChangelog.objects.filter(server=server.id).order_by(
         "-date_modified"
-    )
-
+    )[:5]
     context = {
         "page_title": f"Server - {server.name}",
         "server_count": Server.objects.count(),
@@ -110,23 +109,21 @@ def delete_server(request):
     return redirect("server_overview")
 
 
-def server_logs(server_id):
+def server_logs(request, server_id: int):
     server = get_object_or_404(Server, id=server_id)
     changelog = ProfileChangelog.objects.filter(server=server.id).order_by(
         "-date_modified"
     )
     context = {
-        "page_title": f"Changelog - { server.name }",
+        "page_title": f"Changelogs - {server.name}",
         "server_count": Server.objects.count(),
         "unack_changelog_count": ProfileChangelog.objects.filter(
             acknowledged=False
         ).count(),
         "alert_count": AlertEndpoint.objects.count(),
-        "server": server,
         "changelog": changelog,
-        "edit_server_form": ServerForm(instance=server),
     }
-    pass
+    return render(request, "sentinel/changelog_overview.html", context=context)
 
 
 def changelog_overview(request):
