@@ -33,17 +33,11 @@ python manage.py runserver
 ```  
   
 ## To-Do  
-- Test validations for:  
-    - Adding Servers  
-    - Adding Webhooks  
+- Test CRUD validations for:  
+    - Servers  
+    - Webhooks  
 
 - Implement:  
-    - Deleting Servers  
-    - Modifying Webhooks  
-    - Deleting Webhooks  
-    - Modifying ContactGroups  
-    - Deleting ContactGroups  
-    - Viewing all changelogs for a server  
     - Exporting changelog history for a server  
     - Viewing alert logs  
   
