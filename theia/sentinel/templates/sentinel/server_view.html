@@ -181,14 +181,17 @@
                     <label for="dns-records-table">DNS Records</label>
                     <table class="table" id="dns-records-table">
                         {% for k,v in server.serverprofile.dns_records.items %}
-                        <tr>
-                            <th>{{ k }}</th>
-                            <td>
-                                {% for record in v %}                                    
-                                    <span>{{ record }}</span><br>
-                                {% endfor %}
-                            </td>
-                        </tr>
+                            {% if v %}
+                            <tr>
+                                <th>{{ k }}</th>
+                        
+                                <td>
+                                    {% for record in v %}                                    
+                                        <span>{{ record }}</span><br>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
                         {% endfor %}
                     </table>
                     <label for="security-headers-table">Security Headers</label>
