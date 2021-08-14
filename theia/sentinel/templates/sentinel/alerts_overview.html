@@ -38,12 +38,12 @@
                             <td colspan="4">{{ endpoint.endpoint_value }}</td>
                             <td>
                                 {% if debug_flag %}
-                                <button class="btn btn-sm btn-warning" id="debug_button" name="{{ endpoint.name }}"
+                                <button class="btn btn-link btn-warning" id="debug_button" name="{{ endpoint.name }}"
                                     value="{{ endpoint.id }}">
                                     <i class="la la-bug"> </i> Test
                                 </button>
                                 {% endif %}
-                                <button class="btn btn-sm btn-danger" id="delete_endpoint_button"
+                                <button class="btn btn-link btn-danger" id="delete_endpoint_button"
                                     name="{{ endpoint.name }}" value="{{ endpoint.id }}" data-toggle="modal"
                                     data-target="#delete_endpoint_modal">
                                     <i class="la la-trash"> </i> Delete
@@ -85,17 +85,17 @@
                                 </td>
                                 <td colspan="2">
                                     <div class="d-flex justify-content-around">
-                                        <button class="btn btn-sm btn-success mx-1" id="edit_cg_button"
+                                        <button class="btn btn-link btn-success mx-1" id="edit_cg_button"
                                             value="{{ cg.id }}" name="{{ cg.name }}" data-toggle="modal"
                                             data-target="#edit_group_modal">
                                             <i class="la la-edit"></i> Edit
                                         </button>
-                                        <button class="btn btn-sm btn-danger mx-1" id="delete_cg_button"
+                                        <button class="btn btn-link btn-danger mx-1" id="delete_cg_button"
                                             value="{{ cg.id }}" name="{{ cg.name }}" data-toggle="modal"
                                             data-target="#delete_group_modal">
                                             <i class="la la-trash"></i> Delete
                                         </button>
-                                        <button class="btn btn-sm btn-info mx-1" data-toggle="collapse"
+                                        <button class="btn btn-link btn-info mx-1" data-toggle="collapse"
                                             data-target=".cg{{ cg.id }}">
                                             <i class="la la-search"></i> Expand
                                         </button>
@@ -362,7 +362,6 @@
             nameSpan.innerHTML = $(this).attr('name');
         });
     });
-
 </script>
 {% endif %}
 {% endblock %}
