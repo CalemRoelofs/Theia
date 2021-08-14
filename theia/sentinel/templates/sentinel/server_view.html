@@ -11,9 +11,14 @@
                 <div class="card-header">
                     <div class="card-title"><i class="la la-info-circle la-lg"> </i>
                         Server View - {{ server.name }}
+
                         <button type="button" class="btn btn-primary pull-right" data-toggle="modal"
                             data-target="#edit_server_modal">
                             <i class="la la-edit la-lg"> </i> Edit Server
+                        </button>
+                        <button type="button" class="btn btn-danger pull-right mr-2" data-toggle="modal"
+                            data-target="#delete_server_modal">
+                            <i class="la la-trash la-lg"> </i> Delete Server
                         </button>
                     </div>
                 </div>
@@ -38,6 +43,16 @@
                         <tr>
                             <th>Administrator</th>
                             <td>{{ server.sysadmin }}</td>
+                        </tr>
+                        <tr>
+                            <th>Contact Group</th>
+                            <td>
+                                {% if server.contact_group %}
+                                {{ server.contact_group.name }}
+                                {% else %}
+                                No Contact Group assigned
+                                {% endif %}
+                            </td>
                         </tr>
                         <tr>
                             <th>Date Added</th>
@@ -227,6 +242,35 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary"
                     onclick="document.getElementById('edit_server_form').submit()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="delete_server_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Delete {{ server.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'delete_server' %}" method="POST" id="delete_server_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{ server.id }}" name="id" />
+                    <p>
+                        You are about to permanently delete "{{ server.name }}".
+                        This will remove all logs, alerts and
+                        tasks created for it. Are you sure you want to proceed?
+                    </p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger"
+                    onclick="document.getElementById('delete_server_form').submit()">Delete Server</button>
             </div>
         </div>
     </div>

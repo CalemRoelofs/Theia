@@ -133,7 +133,7 @@ class AlertLog(models.Model):
 
     timestamp = models.DateTimeField("Timestamp")
     server = models.ForeignKey(Server, on_delete=models.CASCADE, null=False)
-    alert_endpoint = models.ForeignKey("AlertEndpoint", AlertEndpoint)
+    alert_endpoint = models.ForeignKey(AlertEndpoint, on_delete=models.CASCADE)
     message = models.TextField("Message", null=False, blank=False)
     status_code = models.IntegerField("Status Code", null=True, blank=True)
 

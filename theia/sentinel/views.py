@@ -94,7 +94,6 @@ def create_server(request):
 def edit_server(request):
     if request.method == "POST":
         server = get_object_or_404(Server, id=request.POST["id"])
-        logger.error(request.POST)
         form = ServerForm(request.POST or None, instance=server)
         if form.is_valid():
             form.save()
@@ -105,7 +104,10 @@ def edit_server(request):
 
 
 def delete_server(request):
-    pass
+    if request.method == "POST":
+        server = get_object_or_404(Server, id=request.POST["id"])
+        server.delete()
+    return redirect("server_overview")
 
 
 def server_logs(server_id):
@@ -178,6 +180,12 @@ def alerts_overview(request):
 def send_test_alert(request):
     data = json.loads(request.read().decode("utf-8"))
     server = Server.objects.get(id=1)
+
+    try:
+        endpoint = get_object_or_404(AlertEndpoint, id=data["id"])
+    except Http404:
+        return JsonResponse({"message": f"Could not find id: {id}"})
+
     old_name = server.name
     server.name = "Debug Server"
     server.save()
@@ -197,11 +205,6 @@ def send_test_alert(request):
     \tOld Value:    {test_changelog.old_value}\n
     \tNew Value:    {test_changelog.new_value}\n
     """
-
-    try:
-        endpoint = get_object_or_404(AlertEndpoint, id=data["id"])
-    except Http404:
-        return JsonResponse({"message": f"Could not find id: {id}"})
 
     status_code = send_alert(endpoint, test_changelog, message)
     server.name = old_name
@@ -224,7 +227,10 @@ def edit_alert_endpoint(request):
 
 
 def delete_alert_endpoint(request):
-    pass
+    if request.method == "POST":
+        endpoint = get_object_or_404(AlertEndpoint, id=request.POST["id"])
+        endpoint.delete()
+    return redirect("alerts_overview")
 
 
 def alerts_logs():
@@ -242,8 +248,16 @@ def create_contact_group(request):
 
 
 def edit_contact_group(request):
-    pass
+    if request.method == "POST":
+        cg = get_object_or_404(ContactGroup, id=request.POST["id"])
+        form = ContactGroupForm(request.POST or None, instance=cg)
+        if form.is_valid():
+            form.save()
+    return redirect("alerts_overview")
 
 
 def delete_contact_group(request):
-    pass
+    if request.method == "POST":
+        cg = get_object_or_404(ContactGroup, id=request.POST["id"])
+        cg.delete()
+    return redirect("alerts_overview")

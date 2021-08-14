@@ -38,11 +38,16 @@
                             <td colspan="4">{{ endpoint.endpoint_value }}</td>
                             <td>
                                 {% if debug_flag %}
-                                <button class="btn btn-sm btn-warning debug-button" name="{{ endpoint.name }}"
+                                <button class="btn btn-sm btn-warning" id="debug_button" name="{{ endpoint.name }}"
                                     value="{{ endpoint.id }}">
                                     <i class="la la-bug"> </i> Test
                                 </button>
                                 {% endif %}
+                                <button class="btn btn-sm btn-danger" id="delete_endpoint_button"
+                                    name="{{ endpoint.name }}" value="{{ endpoint.id }}" data-toggle="modal"
+                                    data-target="#delete_endpoint_modal">
+                                    <i class="la la-trash"> </i> Delete
+                                </button>
                             </td>
                         </tr>
                         {% endif %}
@@ -72,18 +77,37 @@
                         </thead>
                         <tbody>
                             {% for cg in contact_groups %}
-                            <tr>
-                                <td>{{ cg.name }}</td>
+                            <tr class="accordion-toggle">
+                                <td>
+                                    <div class="align-items-center">
+                                        <p class="mt-2">{{ cg.name }}</p>
+                                    </div>
+                                </td>
                                 <td colspan="2">
-                                    <div class="d-flex justify-content-start">
-                                        <button class="btn btn-sm btn-success mx-1" id="edit-cg-button"
-                                            value="{{ cg.id }}">
+                                    <div class="d-flex justify-content-around">
+                                        <button class="btn btn-sm btn-success mx-1" id="edit_cg_button"
+                                            value="{{ cg.id }}" name="{{ cg.name }}" data-toggle="modal"
+                                            data-target="#edit_group_modal">
                                             <i class="la la-edit"></i> Edit
                                         </button>
-                                        <button class="btn btn-sm btn-danger mx-1" id="delete-cg-button"
-                                            value="{{ cg.id }}">
+                                        <button class="btn btn-sm btn-danger mx-1" id="delete_cg_button"
+                                            value="{{ cg.id }}" name="{{ cg.name }}" data-toggle="modal"
+                                            data-target="#delete_group_modal">
                                             <i class="la la-trash"></i> Delete
                                         </button>
+                                        <button class="btn btn-sm btn-info mx-1" data-toggle="collapse"
+                                            data-target=".cg{{ cg.id }}">
+                                            <i class="la la-search"></i> Expand
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="my-0 py-0">
+                                <td colspan="3" class="my-0 py-0">
+                                    <div id="collapse my-0 py-0" class="collapse cg{{ cg.id }}">
+                                        {% for endpoint in cg.alert_endpoints.all %}
+                                        <p class="text-sm">- {{ endpoint.name }}</p>
+                                        {% endfor %}
                                     </div>
                                 </td>
                             </tr>
@@ -131,6 +155,35 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="delete_endpoint_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Delete Endpoint</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'delete_alert_endpoint' %}" method="POST" id="delete_endpoint_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="" name="id" id="delete_endpoint_id" />
+                    <p>
+                        You are about to permanently delete "<span id="delete_endpoint_name"></span>".
+                        This will remove all alert logs created for it and remove it from any associated contact groups.
+                        Are you sure you want to proceed?
+                    </p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger"
+                    onclick="document.getElementById('delete_endpoint_form').submit()">Delete Server</button>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="add_group_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -162,12 +215,82 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="edit_group_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Edit Contact Group</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'edit_contact_group' %}" method="POST" id="edit_group_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="" name="id" id="edit_group_id" />
+                    <div class="form-group row">
+                        <label for="contact_group_name" class="col-sm-4 col-form-label">Name</label>
+                        <div class="col-sm-8">
+                            <input type="text" name="name" id="contact_group_name" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="endpoints_list" class="col-sm-4 col-form-label">Endpoints</label>
+                        <div class="col-sm-8">
+                            <select name="endpoints" id="alert_endpoints" class="form-control" multiple>
+                                {% for endpoint in alert_endpoints %}
+                                <option value="{{ endpoint.id }}">{{ endpoint.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger"
+                    onclick="document.getElementById('edit_group_form').submit()">Delete Server</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="delete_group_modal" tabindex="-1" role="dialog" aria-labelledby="modal-title"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Delete Contact Group</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'delete_contact_group' %}" method="POST" id="delete_group_form">
+                    {% csrf_token %}
+                    <input type="hidden" value="" name="id" id="delete_group_id" />
+                    <p>
+                        You are about to permanently delete "<span id="delete_group_name"></span>".
+                        This will remove this contact group from all associated servers, disabling alerts for those
+                        servers.
+                        Are you sure you want to proceed?
+                    </p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger"
+                    onclick="document.getElementById('delete_group_form').submit()">Delete Group</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 {% block scripts %}
 {% if debug_flag %}
 <script type="text/javascript" language="javascript">
     $(document).ready(function () {
-        $('.debug-button').click(function () {
+        $('#debug_button').click(function () {
             let cookie = document.cookie;
             let csrfToken = cookie.substring(cookie.indexOf('=') + 1);
             var $btnName = $(this).attr('name');
@@ -216,6 +339,27 @@
                     });
                 }
             });
+        });
+
+        $('#delete_endpoint_button').click(function () {
+            let idField = document.getElementById("delete_endpoint_id");
+            let nameSpan = document.getElementById("delete_endpoint_name");
+            idField.value = $(this).val();
+            nameSpan.innerHTML = $(this).attr('name');
+        });
+
+        $('#edit_cg_button').click(function () {
+            let idField = document.getElementById("edit_group_id");
+            let nameInput = document.getElementById("contact_group_name");
+            idField.value = $(this).val();
+            nameInput.value = $(this).attr('name');
+        });
+
+        $('#delete_cg_button').click(function () {
+            let idField = document.getElementById("delete_group_id");
+            let nameSpan = document.getElementById("delete_group_name");
+            idField.value = $(this).val();
+            nameSpan.innerHTML = $(this).attr('name');
         });
     });
 
