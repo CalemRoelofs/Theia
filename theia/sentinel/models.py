@@ -132,7 +132,7 @@ class AlertLog(models.Model):
         verbose_name_plural = "Alert Logs"
 
     timestamp = models.DateTimeField("Timestamp")
-    server = models.ForeignKey("Server", Server)
+    server = models.ForeignKey(Server, on_delete=models.CASCADE, null=False)
     alert_endpoint = models.ForeignKey("AlertEndpoint", AlertEndpoint)
     message = models.TextField("Message", null=False, blank=False)
     status_code = models.IntegerField("Status Code", null=True, blank=True)
