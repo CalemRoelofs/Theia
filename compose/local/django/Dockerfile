@@ -10,9 +10,12 @@ RUN apt-get update \
   && apt-get install -y libpq-dev \
   # Translations dependencies
   && apt-get install -y gettext \
+  # Install nmap
+  && apt-get install -y nmap \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
+
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements.txt /requirements.txt
