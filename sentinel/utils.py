@@ -60,7 +60,8 @@ def log_changes(server: Server, changed_field: str, new_value):
     \tOld Value:    {changelog.old_value}\n
     \tNew Value:    {changelog.new_value}\n
     """
-
+    if not server.contact_group:
+        return None
     for endpoint in server.contact_group.alert_endpoints.all():
         send_alert(endpoint, changelog, message)
     return None
