@@ -10,6 +10,9 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.utils.timezone import now
+
+from .alerts import send_alert
+from .utils import create_or_update_tasks
 from sentinel.forms import AlertEndpointForm
 from sentinel.forms import ContactGroupForm
 from sentinel.forms import ServerForm
@@ -20,9 +23,6 @@ from sentinel.models import ENDPOINT_TYPE_CHOICES
 from sentinel.models import ProfileChangelog
 from sentinel.models import Server
 from sentinel.models import ServerProfile
-
-from .alerts import send_alert
-from .utils import create_or_update_tasks
 
 
 logger = logging.getLogger(__name__)
