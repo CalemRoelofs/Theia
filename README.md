@@ -32,6 +32,7 @@ docker-compose up -d
 ```  
 
 The server will run on port 8080 by default but this can be changed in the `docker-compose.yml` file.  
+If you want to use the Django Admin Panel, to set up a superuser find the id of the container and run `docker exec -it container_id python manage.py createsuperuser`.  
   
 ## To-Do  
 - Test CRUD validations for:  
