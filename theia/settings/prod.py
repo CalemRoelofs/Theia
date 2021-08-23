@@ -8,6 +8,8 @@ environ.Env.read_env(".env.prod")
 
 # Throw an error if no secret key is configured
 SECRET_KEY = env("DJANGO_SECRET_KEY")
+DEBUG = True
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Override timezone if present
 TIME_ZONE = env("DJANGO_TIME_ZONE", default="UTC")
