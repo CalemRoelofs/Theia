@@ -27,11 +27,11 @@ The basic idea is to have an application in place that not only tracks what infr
 
 ## Usage
 ```bash
-cd theia
-celery -A theia beat -l INFO &
-celery -A theia worker -l INFO &
-python manage.py runserver
+docker-compose build
+docker-compose up -d
 ```  
+
+The server will run on port 8080 by default but this can be changed in the `docker-compose.yml` file.  
   
 ## To-Do  
 - Test CRUD validations for:  
