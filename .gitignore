@@ -5,3 +5,7 @@ __pycache__/
 *.log
 *.png
 .pytest*
+.env.prod
+.env.dev
+.env
+celerybeat-schedule

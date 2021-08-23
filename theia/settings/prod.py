@@ -4,7 +4,7 @@ import environ
 from .base import *
 
 env = environ.Env()
-environ.Env.read_env(".env.prod")
+environ.Env.read_env(".env")
 
 # Throw an error if no secret key is configured
 SECRET_KEY = env("DJANGO_SECRET_KEY")
