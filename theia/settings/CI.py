@@ -2,7 +2,7 @@
 from .base import *
 from theia.settings.dev import ALLOWED_HOSTS
 
-DATABASES = {"default": {"NAME": ":memory:"}}
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 SECRET_KEY = "CI-SECRET-KEY"
 DEBUG = False
 ALLOWED_HOSTS = ["*"]

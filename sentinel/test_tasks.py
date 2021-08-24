@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
+import django
 from celery.exceptions import Retry
 from django.test import TestCase
 from pytz import timezone
+
+django.setup()
 
 from .models import ProfileChangelog
 from .models import Server
@@ -33,11 +36,11 @@ class TestTasks(TestCase):
         server.serverprofile = ServerProfile(
             server=server,
             is_up=True,
-            open_ports="null",
-            security_headers="null",
-            ssl_certs="null",
-            latency="null",
-            dns_records="null",
+            open_ports=None,
+            security_headers=None,
+            ssl_certs=None,
+            latency=None,
+            dns_records=None,
         )
 
         server.serverprofile.save()
@@ -69,7 +72,10 @@ class test_port_scan(TestTasks):
         server = Server.objects.get(id=1)
 
         task = port_scan.s(server_id=1).apply()
-        change = ProfileChangelog.objects.get(id=1)
+        try:
+            change = ProfileChangelog.objects.get(id=1)
+        except ProfileChangelog.DoesNotExist:
+            self.fail("ProfileChanglog was not created")
 
         self.assertEqual(task.result, "SUCCESS")
         self.assertEqual(change.server, server)
@@ -101,13 +107,19 @@ class test_dns_records(TestTasks):
 
         task = dns_records.s(server_id=1).apply()
 
-        self.assertEqual(task.result, f"Could not resolve domain {server.domain_name}!")
+        self.assertEqual(
+            task.result,
+            f"Could not resolve domain {server.domain_name} for test_server's A record!",
+        )
 
     def test_WhenDNSChangeDetected_ProfileChangelogCreated(self):
         server = Server.objects.get(id=1)
 
         task = dns_records.s(server_id=1).apply()
-        change = ProfileChangelog.objects.get(id=1)
+        try:
+            change = ProfileChangelog.objects.get(id=1)
+        except ProfileChangelog.DoesNotExist:
+            self.fail("ProfileChanglog was not created")
 
         self.assertEqual(task.result, "SUCCESS")
         self.assertEqual(change.server, server)
@@ -140,14 +152,18 @@ class test_ssl_certs(TestTasks):
         task = ssl_certs.s(server_id=1).apply()
 
         self.assertEqual(
-            task.result, f"Failed to make SSL connection to {server.domain_name}"
+            task.result,
+            f"Failed to make SSL connection to {server.domain_name} for {server.name}!",
         )
 
     def test_WhenSSLChangeDetected_ProfileChangelogCreated(self):
         server = Server.objects.get(id=1)
 
         task = ssl_certs.s(server_id=1).apply()
-        change = ProfileChangelog.objects.get(id=1)
+        try:
+            change = ProfileChangelog.objects.get(id=1)
+        except ProfileChangelog.DoesNotExist:
+            self.fail("ProfileChanglog was not created")
 
         self.assertEqual(task.result, "SUCCESS")
         self.assertEqual(change.server, server)
@@ -188,7 +204,10 @@ class test_get_headers(TestTasks):
 
         task = get_headers.s(server_id=1).apply()
 
-        self.assertEqual(task.result, f"Connection to {server.domain_name} timed out")
+        self.assertEqual(
+            task.result,
+            f"Connection to {server.domain_name} timed out for {server.name}!",
+        )
 
     def test_WhenConnectionFails_ReturnsError(self):
         server = Server.objects.get(id=1)
@@ -197,13 +216,19 @@ class test_get_headers(TestTasks):
 
         task = get_headers.s(server_id=1).apply()
 
-        self.assertEqual(task.result, f"There was an error connecting to sdkljfnsgdsg")
+        self.assertEqual(
+            task.result,
+            f"There was an error connecting to sdkljfnsgdsg for {server.name}!",
+        )
 
     def test_WhenHeadersChangeDetected_ProfileChangelogCreated(self):
         server = Server.objects.get(id=1)
 
         task = get_headers.s(server_id=1).apply()
-        change = ProfileChangelog.objects.get(id=1)
+        try:
+            change = ProfileChangelog.objects.get(id=1)
+        except ProfileChangelog.DoesNotExist:
+            self.fail("ProfileChanglog was not created")
 
         self.assertEqual(task.result, "SUCCESS")
         self.assertEqual(change.server, server)
