@@ -37,7 +37,7 @@ def _discord_notification(
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
         server=changelog.server,
-        alert_endpoint=endpoint,
+        alert_endpoint=endpoint.name,
         message=message,
         status_code=response.status_code,
     ).save()
@@ -135,7 +135,7 @@ def _msteams_notification(
     response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
     AlertLog(
         server=changelog.server,
-        alert_endpoint=endpoint,
+        alert_endpoint=endpoint.name,
         message=message,
         status_code=response.status_code,
     ).save()
@@ -167,7 +167,7 @@ def _slack_notification(
 
     AlertLog(
         server=changelog.server,
-        alert_endpoint=endpoint,
+        alert_endpoint=endpoint.name,
         message=message,
         status_code=response.status_code,
     ).save()
@@ -194,7 +194,7 @@ def _telegram_notification(
 
     AlertLog(
         server=changelog.server,
-        alert_endpoint=endpoint,
+        alert_endpoint=endpoint.name,
         message=message,
         status_code=response.status_code,
     ).save()

@@ -3,7 +3,6 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import HttpResponseRedirect
 from django.http.response import Http404
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -13,13 +12,13 @@ from django.utils.timezone import now
 
 from .alerts import send_alert
 from .utils import create_or_update_tasks
+from sentinel.constants import ENDPOINT_TYPE_CHOICES
 from sentinel.forms import AlertEndpointForm
 from sentinel.forms import ContactGroupForm
 from sentinel.forms import ServerForm
 from sentinel.models import AlertEndpoint
 from sentinel.models import AlertLog
 from sentinel.models import ContactGroup
-from sentinel.models import ENDPOINT_TYPE_CHOICES
 from sentinel.models import ProfileChangelog
 from sentinel.models import Server
 from sentinel.models import ServerProfile
@@ -230,8 +229,18 @@ def delete_alert_endpoint(request):
     return redirect("alerts_overview")
 
 
-def alerts_logs():
-    pass
+def alerts_logs(request):
+    alertlog = AlertLog.objects.all().order_by("-timestamp")
+    context = {
+        "page_title": "Alert Logs",
+        "server_count": Server.objects.count(),
+        "unack_changelog_count": ProfileChangelog.objects.filter(
+            acknowledged=False
+        ).count(),
+        "alert_count": AlertEndpoint.objects.count(),
+        "alertlog": alertlog,
+    }
+    return render(request, "sentinel/alert_logs.html", context=context)
 
 
 def create_contact_group(request):

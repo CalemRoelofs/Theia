@@ -18,6 +18,7 @@ urlpatterns = [
     path("alerts/edit", views.edit_alert_endpoint, name="edit_alert_endpoint"),
     path("alerts/delete", views.delete_alert_endpoint, name="delete_alert_endpoint"),
     path("alerts/test", views.send_test_alert, name="send_test_alert"),
+    path("alerts/logs/", views.alerts_logs, name="alert_logs"),
     path(
         "contactgroups/create", views.create_contact_group, name="create_contact_group"
     ),

@@ -1,0 +1,42 @@
+{% extends 'sentinel/_layout.html' %}
+{% load static %}
+{% load customfilters %}
+{% load widget_tweaks %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        Alert Logs
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Server</th>
+                            <th>Endpoint</th>
+                            <th>Status Code</th>
+                        </thead>
+                        <tbody>
+                            {% for log in alertlog %}
+                            <tr>
+                                <td>{{ log.id }}</td>
+                                <td>{{ log.timestamp }}</td>
+                                <td>{{ log.server.name }}</td>
+                                <td>{{ log.endpoint.name }}</td>
+                                <td>{{ log.status_code }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
