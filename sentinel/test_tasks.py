@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
-from unittest.mock import patch
 
 import django
+import pytest
 from celery.exceptions import Retry
 from django.test import TestCase
 from pytz import timezone
@@ -45,26 +45,6 @@ class TestTasks(TestCase):
         )
 
         server.serverprofile.save()
-
-
-def mocked_good_ping(server: Server):
-    ProfileChangelog.objects.create(
-        server,
-        changed_field="latency",
-        old_value=None,
-        new_value={"min": 1, "max": 1, "avg": 1},
-    )
-    server.is_up = True
-    server.serverprofile.latency = {"min": 1, "max": 1, "avg": 1}
-    server.serverprofile.save()
-    server.save()
-    return "SUCCESS"
-
-
-def mocked_bad_ping(server: Server):
-    server.is_up = False
-    server.save()
-    return f"Could not ping {server.ip_address}"
 
 
 class test_port_scan(TestTasks):
@@ -269,18 +249,25 @@ class test_get_headers(TestTasks):
 
 
 class test_ping_server(TestTasks):
-    @patch("sentinel.tasks.ping_server", mocked_good_ping)
+    @pytest.mark.dependency()
+    def test_CanPing(self):
+        task = ping_server.s(server_id=1).apply()
+
+        self.assertEqual(task.result, "SUCCESS")
+
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_WhenServerFoundAndPingReturnsOutput_ReturnsSuccess(self):
         task = ping_server.s(server_id=1).apply()
 
         self.assertEqual(task.result, "SUCCESS")
 
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_ping_server_WhenServerNotFound_ReturnsError(self):
         task = ping_server.s(server_id=2).apply()
 
         self.assertEqual(task.result, "Server with id '2' does not exist!")
 
-    @patch("sentinel.tasks.ping_server", mocked_bad_ping)
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_WhenServerNotReachable_ReturnsError(self):
         server = Server.objects.get(id=1)
         server.ip_address = "192.168.255.254"
@@ -290,7 +277,7 @@ class test_ping_server(TestTasks):
 
         self.assertEqual(task.result, f"Could not ping {server.ip_address}")
 
-    @patch("sentinel.tasks.ping_server", mocked_bad_ping)
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_WhenServerNotReachable_is_up_ChangesToFalse(self):
         server = Server.objects.get(id=1)
         server.ip_address = "192.168.255.254"
@@ -301,7 +288,7 @@ class test_ping_server(TestTasks):
 
         self.assertFalse(server.serverprofile.is_up)
 
-    @patch("sentinel.tasks.ping_server", mocked_good_ping)
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_WhenServerReachable_is_up_ChangesToTrue(self):
         server = Server.objects.get(id=1)
         server.serverprofile.is_up = False
@@ -314,7 +301,7 @@ class test_ping_server(TestTasks):
         self.assertEqual(task.result, "SUCCESS")
         self.assertEqual(server.serverprofile.is_up, True)
 
-    @patch("sentinel.tasks.ping_server", mocked_good_ping)
+    @pytest.mark.dependency(depends=["test_ping_server::test_CanPing"])
     def test_WhenPingSucceeds_LatencyValuesUpdated(self):
         server = Server.objects.get(id=1)
 
