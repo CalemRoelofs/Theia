@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.apps import AppConfig
-from utils import is_redis_available
+
+from sentinel.utils import is_redis_available
 
 
 class SentinelConfig(AppConfig):
