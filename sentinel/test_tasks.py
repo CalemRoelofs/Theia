@@ -9,15 +9,15 @@ from pytz import timezone
 
 django.setup()
 
-from .models import ProfileChangelog
-from .models import Server
-from .models import ServerProfile
-from .tasks import debug_task
-from .tasks import dns_records
-from .tasks import get_headers
-from .tasks import ping_server
-from .tasks import port_scan
-from .tasks import ssl_certs
+from sentinel.models import ProfileChangelog
+from sentinel.models import Server
+from sentinel.models import ServerProfile
+from sentinel.tasks import debug_task
+from sentinel.tasks import dns_records
+from sentinel.tasks import get_headers
+from sentinel.tasks import ping_server
+from sentinel.tasks import port_scan
+from sentinel.tasks import ssl_certs
 
 
 class TestTasks(TestCase):
