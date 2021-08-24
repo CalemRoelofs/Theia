@@ -73,7 +73,7 @@ def log_changes(server: Server, changed_field: str, new_value):
     return None
 
 
-def create_or_update_tasks(server: Server):
+def manage_server_tasks(server: Server):
     """Creates or updates tasks that are mapped to a Server\n
     according to the server's check_* boolean fields.
 
@@ -95,7 +95,10 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        save_task(server, open_ports_task, interval)
+        save_server_task(server, open_ports_task, interval)
+
+    elif not server.check_open_ports:
+        delete_server_task(server, "port_scan")
 
     if server.check_security_headers:
         get_headers_task = PeriodicTask(
@@ -106,7 +109,10 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        save_task(server, get_headers_task, interval)
+        save_server_task(server, get_headers_task, interval)
+
+    elif not server.check_security_headers:
+        delete_server_task(server, "get_headers")
 
     if server.check_ssl_certs:
         ssl_certs_task = PeriodicTask(
@@ -117,7 +123,10 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        save_task(server, ssl_certs_task, interval)
+        save_server_task(server, ssl_certs_task, interval)
+
+    elif not server.check_ssl_certs:
+        delete_server_task(server, "ssl_certs")
 
     if server.check_dns_records:
         dns_records_task = PeriodicTask(
@@ -128,12 +137,15 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        save_task(server, dns_records_task, interval)
+        save_server_task(server, dns_records_task, interval)
+
+    elif not server.check_dns_records:
+        delete_server_task(server, "dns_records")
 
     return None
 
 
-def save_task(server: Server, task: PeriodicTask, interval: IntervalSchedule):
+def save_server_task(server: Server, task: PeriodicTask, interval: IntervalSchedule):
     """Intermediate function to save a created task, map it to a server
     and run it if necessary
 
@@ -162,8 +174,19 @@ def save_task(server: Server, task: PeriodicTask, interval: IntervalSchedule):
     return None
 
 
+def delete_server_task(server: Server, task_name: str):
+    try:
+        server_task = ServerTask.objects.get(server=server, task_name=task_name)
+        server_task.delete()
+    except ServerTask.DoesNotExist:
+        pass
+
+    return None
+
+
 def _run_task_on_creation(task: PeriodicTask):
-    """Private function for use in create_or_update_tasks
+    """Private function for use in manage_server_tasks
+
 
     Args:
         task (PeriodicTask): The task to run
@@ -171,8 +194,7 @@ def _run_task_on_creation(task: PeriodicTask):
     Returns:
         str : The ID of the task ran
     """
-    logging.critical(task)
-    logging.critical(type(task.args), task.args is str, task.args)
+
     current_app.loader.import_default_modules()
     task_args = loads(task.args)
     task_kwargs = loads(task.kwargs)

@@ -11,7 +11,7 @@ from django.shortcuts import render
 from django.utils.timezone import now
 
 from .alerts import send_alert
-from .utils import create_or_update_tasks
+from .utils import manage_server_tasks
 from sentinel.constants import ENDPOINT_TYPE_CHOICES
 from sentinel.forms import AlertEndpointForm
 from sentinel.forms import ContactGroupForm
@@ -84,7 +84,7 @@ def create_server(request):
             new_server = form.save()
             new_server.serverprofile = ServerProfile()
             new_server.serverprofile.save()
-            create_or_update_tasks(new_server)
+            manage_server_tasks(new_server)
             return redirect("server_view", server_id=new_server.id)
     return redirect("server_overview")
 
@@ -96,7 +96,7 @@ def edit_server(request):
         if form.is_valid():
             form.save()
             server.refresh_from_db()
-            create_or_update_tasks(server)
+            manage_server_tasks(server)
             return redirect("server_view", server_id=server.id)
     return redirect("server_overview")
 

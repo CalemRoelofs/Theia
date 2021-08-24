@@ -8,10 +8,10 @@ from pytz import timezone
 
 django.setup()
 
-from sentinel.models import ProfileChangelog
+from sentinel.models import ProfileChangelog, ServerTask
 from sentinel.models import Server
 from sentinel.models import ServerProfile
-from sentinel.utils import log_changes, create_or_update_tasks
+from sentinel.utils import log_changes, manage_server_tasks
 
 
 CHANGED_FIELD_VALUES = [
@@ -97,5 +97,170 @@ class TestLogChanges:
 
 @pytest.mark.django_db
 class TestCreateOrUpdateTasks:
-    def test_WhenCheckOpenPortsIsTrue_TaskIsCreated(self):
+    """Testing "port_scan" tasks"""
+
+    def test_WhenCheckOpenPortsIsTrue_ServerTaskIsCreated(self, setup_server):
         server = setup_server
+        server.check_open_ports = True
+        server.save()
+
+        manage_server_tasks(server)
+        try:
+            servertask = ServerTask.objects.get(server=server, task_name="port_scan")
+        except ServerTask.DoesNotExist:
+            pytest.fail("ServerTask was not created")
+
+        assert servertask.server.name == server.name
+        assert servertask.task_name == "port_scan"
+
+    def test_WhenCheckOpenPortsIsFalse_ServerTaskIsNotCreated(self, setup_server):
+        server = setup_server
+        server.check_open_ports = False
+        server.save()
+
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="port_scan")
+
+    def test_WhenCheckOpenPortsChangesTrueToFalse_ServerTaskIsDeleted(
+        self, setup_server
+    ):
+        server = setup_server
+        server.check_open_ports = True
+        server.save()
+
+        manage_server_tasks(server)
+        servertask = ServerTask.objects.get(server=server, task_name="port_scan")
+        server.check_open_ports = False
+        server.save()
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="port_scan")
+
+    """ testing "dns_records" tasks """
+
+    def test_WhenCheckDNSRecordsIsTrue_ServerTaskIsCreated(self, setup_server):
+        server = setup_server
+        server.check_dns_records = True
+        server.save()
+
+        manage_server_tasks(server)
+        try:
+            servertask = ServerTask.objects.get(server=server, task_name="dns_records")
+        except ServerTask.DoesNotExist:
+            pytest.fail("ServerTask was not created")
+
+        assert servertask.server.name == server.name
+        assert servertask.task_name == "dns_records"
+
+    def test_WhenCheckDNSRecordsIsFalse_ServerTaskIsNotCreated(self, setup_server):
+        server = setup_server
+        server.check_dns_records = False
+        server.save()
+
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="dns_records")
+
+    def test_WhenCheckDNSRecordsChangesTrueToFalse_ServerTaskIsDeleted(
+        self, setup_server
+    ):
+        server = setup_server
+        server.check_dns_records = True
+        server.save()
+
+        manage_server_tasks(server)
+        servertask = ServerTask.objects.get(server=server, task_name="dns_records")
+        server.check_dns_records = False
+        server.save()
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="dns_records")
+
+    """ testing "ssl_certs" task """
+
+    def test_WhenCheckSSLCertsIsTrue_ServerTaskIsCreated(self, setup_server):
+        server = setup_server
+        server.check_ssl_certs = True
+        server.save()
+
+        manage_server_tasks(server)
+        try:
+            servertask = ServerTask.objects.get(server=server, task_name="ssl_certs")
+        except ServerTask.DoesNotExist:
+            pytest.fail("ServerTask was not created")
+
+        assert servertask.server.name == server.name
+        assert servertask.task_name == "ssl_certs"
+
+    def test_WhenCheckSSLCertsIsFalse_ServerTaskIsNotCreated(self, setup_server):
+        server = setup_server
+        server.check_ssl_certs = False
+        server.save()
+
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="ssl_certs")
+
+    def test_WhenCheckSSLCertsChangesTrueToFalse_ServerTaskIsDeleted(
+        self, setup_server
+    ):
+        server = setup_server
+        server.check_ssl_certs = True
+        server.save()
+
+        manage_server_tasks(server)
+        servertask = ServerTask.objects.get(server=server, task_name="ssl_certs")
+        server.check_ssl_certs = False
+        server.save()
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="ssl_certs")
+
+    """ testing "get_headers" task """
+
+    def test_WhenCheckSecurityHeadersIsTrue_ServerTaskIsCreated(self, setup_server):
+        server = setup_server
+        server.check_security_headers = True
+        server.save()
+
+        manage_server_tasks(server)
+        try:
+            servertask = ServerTask.objects.get(server=server, task_name="get_headers")
+        except ServerTask.DoesNotExist:
+            pytest.fail("ServerTask was not created")
+
+        assert servertask.server.name == server.name
+        assert servertask.task_name == "get_headers"
+
+    def test_WhenCheckSecurityHeadersIsFalse_ServerTaskIsNotCreated(self, setup_server):
+        server = setup_server
+        server.check_security_headers = False
+        server.save()
+
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="get_headers")
+
+    def test_WhenCheckSecurityHeadersChangesTrueToFalse_ServerTaskIsDeleted(
+        self, setup_server
+    ):
+        server = setup_server
+        server.check_security_headers = True
+        server.save()
+
+        manage_server_tasks(server)
+        servertask = ServerTask.objects.get(server=server, task_name="get_headers")
+        server.check_security_headers = False
+        server.save()
+        manage_server_tasks(server)
+
+        with pytest.raises(ServerTask.DoesNotExist):
+            servertask = ServerTask.objects.get(server=server, task_name="get_headers")
