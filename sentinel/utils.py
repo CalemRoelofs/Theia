@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from django_celery_beat.models import IntervalSchedule
 from django_celery_beat.models import PeriodicTask
 from kombu.utils.json import loads
+from redis import ConnectionError
 
 from .alerts import send_alert
 from .models import ProfileChangelog
@@ -200,11 +201,14 @@ def _run_task_on_creation(task: PeriodicTask):
     task_kwargs = loads(task.kwargs)
     celery_task = current_app.tasks.get(task.task)
 
-    if task.queue and len(task.queue):
-        task_id = celery_task.apply_async(
-            args=task_args, kwargs=task_kwargs, queue=task.queue
-        )
-    else:
-        task_id = celery_task.apply_async(args=task_args, kwargs=task_kwargs)
+    try:
+        if task.queue and len(task.queue):
+            task_id = celery_task.apply_async(
+                args=task_args, kwargs=task_kwargs, queue=task.queue
+            )
+        else:
+            task_id = celery_task.apply_async(args=task_args, kwargs=task_kwargs)
+    except ConnectionError:
+        return "Could not run task, is Redis up and running?"
 
     return task_id
