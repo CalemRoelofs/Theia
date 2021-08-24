@@ -207,7 +207,7 @@ class test_get_headers(TestTasks):
 
         self.assertEqual(
             task.result,
-            f"Connection to {server.domain_name} timed out for {server.name}!",
+            f"There was an error connecting to {server.domain_name} for {server}!",
         )
 
     def test_WhenConnectionFails_ReturnsError(self):

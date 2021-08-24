@@ -180,11 +180,7 @@ def get_headers(server_id: int):
         else:
             response = requests.get(f"http://{server.domain_name}", timeout=5)
 
-    except ConnectTimeout:
-        message = f"Connection to {server.domain_name} timed out for {server}!"
-        logger.error(message)
-        return message
-    except requests.RequestException as e:
+    except (ConnectTimeout, requests.RequestException) as e:
         message = f"There was an error connecting to {server.domain_name} for {server}!"
         logger.error(e)
         return message
