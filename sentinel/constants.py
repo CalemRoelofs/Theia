@@ -16,3 +16,18 @@ SECURITY_HEADERS_WHITELIST = {
     "X-Content-Type-Options",
     "X-Frame-Options",
 }
+
+SCAN_FREQUENCY_CHOICES = (
+    ("minutes", "Minutes"),
+    ("hours", "Hours"),
+    ("days", "Days"),
+    ("weeks", "Weeks"),
+)
+
+ENDPOINT_TYPE_CHOICES = (
+    ("discord", "Discord"),
+    ("msteams", "Microsoft Teams"),
+    ("slack", "Slack"),
+    ("telegram", "Telegram"),
+    ("email", "Email"),
+)

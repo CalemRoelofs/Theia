@@ -15,12 +15,9 @@ HostInfo = namedtuple(field_names="cert hostname peername", typename="HostInfo")
 
 
 def has_expired(not_before, not_after):
-    # verify notAfter/notBefore, CA trusted, servername/sni/hostname
     start = datetime.strptime(not_before, "%Y-%m-%d %H:%M:%S")
     end = datetime.strptime(not_after, "%Y-%m-%d %H:%M:%S")
     return start < datetime.now() < end
-    # service_identity.pyopenssl.verify_hostname(client_ssl, hostname)
-    # issuer
 
 
 # The PyOpenSSL library doesn't have a (working) way of setting
@@ -92,38 +89,3 @@ def get_issuer(cert):
         return names[0].value
     except x509.ExtensionNotFound:
         return None
-
-
-def print_basic_info(hostinfo):
-    s = """» {hostname} « … {peername}
-    \tcommonName: {commonname}
-    \tSAN: {SAN}
-    \tissuer: {issuer}
-    \tnotBefore: {notbefore}
-    \tnotAfter:  {notafter}
-    \texpired: {expired}
-    """.format(
-        hostname=hostinfo.hostname,
-        peername=hostinfo.peername,
-        commonname=get_common_name(hostinfo.cert),
-        SAN=get_alt_names(hostinfo.cert),
-        issuer=get_issuer(hostinfo.cert),
-        notbefore=hostinfo.cert.not_valid_before,
-        notafter=hostinfo.cert.not_valid_after,
-        expired=not (
-            hostinfo.cert.not_valid_before
-            < datetime.now()
-            < hostinfo.cert.not_valid_after
-        ),
-    )
-    print(s)
-
-
-def check_it_out(hostname, port):
-    hostinfo = get_certificate(hostname, port)
-    print_basic_info(hostinfo)
-
-
-if __name__ == "__main__":
-    hostinfo = get_certificate("www.viatel.com", 443)
-    print_basic_info(hostinfo)

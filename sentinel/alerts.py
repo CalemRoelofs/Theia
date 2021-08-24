@@ -215,4 +215,6 @@ def send_alert(
     elif endpoint.endpoint_type == "telegram":
         return _telegram_notification(endpoint, changelog, message)
     else:
-        return 200
+        raise RuntimeError(
+            f"{endpoint}: {endpoint.endpoint_type} is not a valid endpoint type!"
+        )

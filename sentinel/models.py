@@ -4,20 +4,8 @@ from django.utils.timezone import now
 from django.views.generic import ListView
 from django_celery_beat.models import PeriodicTask
 
-SCAN_FREQUENCY_CHOICES = (
-    ("minutes", "Minutes"),
-    ("hours", "Hours"),
-    ("days", "Days"),
-    ("weeks", "Weeks"),
-)
-
-ENDPOINT_TYPE_CHOICES = (
-    ("discord", "Discord"),
-    ("msteams", "Microsoft Teams"),
-    ("slack", "Slack"),
-    ("telegram", "Telegram"),
-    ("email", "Email"),
-)
+from sentinel.constants import ENDPOINT_TYPE_CHOICES
+from sentinel.constants import SCAN_FREQUENCY_CHOICES
 
 
 class AlertEndpoint(models.Model):
@@ -32,6 +20,7 @@ class AlertEndpoint(models.Model):
         null=False,
         blank=False,
         choices=ENDPOINT_TYPE_CHOICES,
+        default="discord",
     )
     endpoint_value = models.CharField(
         "Webhook URL/Email Address", max_length=512, null=False, blank=False
@@ -73,9 +62,14 @@ class Server(models.Model):
     contact_group = models.ForeignKey(
         ContactGroup, on_delete=models.SET_NULL, null=True, blank=True
     )
-    scan_frequency_value = models.IntegerField("Scan Frequency Value", default=10)
+    scan_frequency_value = models.PositiveIntegerField(
+        "Scan Frequency Value", default=10
+    )
     scan_frequency_period = models.CharField(
-        "Scan Frequency Period", max_length=20, choices=SCAN_FREQUENCY_CHOICES
+        "Scan Frequency Period",
+        max_length=20,
+        choices=SCAN_FREQUENCY_CHOICES,
+        default="minutes",
     )
     check_open_ports = models.BooleanField("Check Open Ports", default=True)
     check_security_headers = models.BooleanField("Check Security Headers", default=True)

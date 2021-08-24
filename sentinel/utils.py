@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 from datetime import datetime
 
 from celery import current_app
@@ -42,6 +43,11 @@ def log_changes(server: Server, changed_field: str, new_value):
     elif changed_field == "latency":
         old_value = server.serverprofile.latency
         server.serverprofile.latency = new_value
+
+    else:
+        raise RuntimeError(
+            f"{server}: {changed_field} is not a valid option for changed_field"
+        )
 
     server.serverprofile.save()
 
@@ -89,21 +95,7 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        server_task, created = ServerTask.objects.get_or_create(
-            server=server, task_name="open_ports"
-        )
-
-        # If there's no mapping of that server to that task
-        if created:
-            # Save the task and map it to the server
-            open_ports_task.save()
-            server_task.task = open_ports_task
-            server_task.save()
-            _run_task_on_creation(server_task.task)
-        else:
-            # Otherwise just update the interval
-            server_task.task.interval = interval
-            server_task.task.save()
+        save_task(server, open_ports_task, interval)
 
     if server.check_security_headers:
         get_headers_task = PeriodicTask(
@@ -114,18 +106,7 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        server_task, created = ServerTask.objects.get_or_create(
-            server=server, task_name="get_headers"
-        )
-
-        if created:
-            get_headers_task.save()
-            server_task.task = get_headers_task
-            server_task.save()
-            _run_task_on_creation(server_task.task)
-        else:
-            server_task.task.interval = interval
-            server_task.task.save()
+        save_task(server, get_headers_task, interval)
 
     if server.check_ssl_certs:
         ssl_certs_task = PeriodicTask(
@@ -136,18 +117,7 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        server_task, created = ServerTask.objects.get_or_create(
-            server=server, task_name="ssl_certs"
-        )
-
-        if created:
-            ssl_certs_task.save()
-            server_task.task = ssl_certs_task
-            server_task.save()
-            _run_task_on_creation(server_task.task)
-        else:
-            server_task.task.interval = interval
-            server_task.task.save()
+        save_task(server, ssl_certs_task, interval)
 
     if server.check_dns_records:
         dns_records_task = PeriodicTask(
@@ -158,40 +128,61 @@ def create_or_update_tasks(server: Server):
             start_time=now(),
         )
 
-        server_task, created = ServerTask.objects.get_or_create(
-            server=server, task_name="dns_records"
-        )
+        save_task(server, dns_records_task, interval)
 
-        if created:
-            dns_records_task.save()
-            server_task.task = dns_records_task
-            server_task.save()
-            _run_task_on_creation(server_task.task)
-        else:
-            server_task.task.interval = interval
-            server_task.task.save()
+    return None
+
+
+def save_task(server: Server, task: PeriodicTask, interval: IntervalSchedule):
+    """Intermediate function to save a created task, map it to a server
+    and run it if necessary
+
+    Args:
+        server (Server): The Server to create the task for.
+        task (PeriodicTask): The created task to be saved.
+        interval (IntervalSchedule): The interval schedule for updating
+                                        the task if it already exists.
+    """
+    server_task, created = ServerTask.objects.get_or_create(
+        server=server, task_name=task.task
+    )
+
+    # If there's no mapping of that server to that task
+    if created:
+        # Save the task and map it to the server
+        task.save()
+        server_task.task = task
+        server_task.save()
+        _run_task_on_creation(task)
+    else:
+        # Otherwise just update the interval
+        server_task.task.interval = interval
+        server_task.task.save()
 
     return None
 
 
 def _run_task_on_creation(task: PeriodicTask):
-    # This is the only way to get the tasks to run
-    # immediately at the moment because of ciruclar imports.
-    # This is tech debt that WILL need to be refactored.
-    task_meta = [
-        (
-            current_app.tasks.get(task.task),
-            loads(task.args),
-            loads(task.kwargs),
-            task.queue,
+    """Private function for use in create_or_update_tasks
+
+    Args:
+        task (PeriodicTask): The task to run
+
+    Returns:
+        str : The ID of the task ran
+    """
+    logging.critical(task)
+    logging.critical(type(task.args), task.args is str, task.args)
+    current_app.loader.import_default_modules()
+    task_args = loads(task.args)
+    task_kwargs = loads(task.kwargs)
+    celery_task = current_app.tasks.get(task.task)
+
+    if task.queue and len(task.queue):
+        task_id = celery_task.apply_async(
+            args=task_args, kwargs=task_kwargs, queue=task.queue
         )
-    ]
+    else:
+        task_id = celery_task.apply_async(args=task_args, kwargs=task_kwargs)
 
-    task_ids = [
-        task.apply_async(args=args, kwargs=kwargs, queue=queue)
-        if queue and len(queue)
-        else task.apply_async(args=args, kwargs=kwargs)
-        for task, args, kwargs, queue in task_meta
-    ]
-
-    return task_ids
+    return task_id
