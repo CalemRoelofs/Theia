@@ -57,7 +57,7 @@ jobs:
       - name: Test with pytest
         env:
           DJANGO_SETTINGS_MODULE: theia.settings.CI
-        run: poetry run pytest --cov sentinel/ -n 2
+        run: poetry run pytest --cov sentinel/ -n 2 -m "not skip_in_CI"
         
   docker:
     timeout-minutes: 10
