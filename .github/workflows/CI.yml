@@ -29,6 +29,9 @@ jobs:
 
       - name: Code Quality
         run: poetry run black . --check
+        
+      - name: Install Nmap
+        run: apt-get install nmap -y
 
       - name: Test with pytest
         env:
