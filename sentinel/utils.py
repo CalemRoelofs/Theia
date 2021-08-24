@@ -5,6 +5,7 @@ from datetime import datetime
 
 import redis
 from celery import current_app
+from django.conf import settings
 from django.utils.timezone import now
 from django_celery_beat.models import IntervalSchedule
 from django_celery_beat.models import PeriodicTask
@@ -215,8 +216,12 @@ def _run_task_on_creation(task: PeriodicTask):
     return task_id
 
 
-def is_redis_available():
-    rs = redis.Redis("localhost", socket_connect_timeout=1)
+def is_redis_available(timeout=5):
+    rs = redis.Redis.from_url(
+        settings.CELERY_BROKER_URL,
+        socket_timeout=timeout,
+        socket_connect_timeout=timeout,
+    )
 
     try:
         rs.ping()

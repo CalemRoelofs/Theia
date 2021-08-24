@@ -28,10 +28,32 @@ sys.exit(0)
 
 END
 }
-until postgres_ready; do
-  >&2 echo 'Waiting for PostgreSQL to become available...'
+
+redis_ready() {
+python << END
+import sys
+
+import redis
+
+rs = redis.Redis.from_url(
+    "redis://redis:6379/0+",
+    socket_connect_timeout=1,
+)
+
+
+try:
+    rs.ping()
+except (redis.exceptions.ConnectionError, redis.exceptions.BusyLoadingError):
+    sys.exit(-1)
+
+sys.exit(0)
+
+END
+}
+until postgres_ready && redis_ready; do
+  >&2 echo 'Waiting for PostgreSQL and Redis to become available...'
   sleep 1
 done
->&2 echo 'PostgreSQL is available'
+>&2 echo 'PostgreSQL and Redis are available'
 
 exec "$@"

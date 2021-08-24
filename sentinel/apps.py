@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from django.apps import AppConfig
 
-from sentinel.utils import is_redis_available
+logger = logging.getLogger(__name__)
 
 
 class SentinelConfig(AppConfig):
@@ -10,8 +12,10 @@ class SentinelConfig(AppConfig):
 
     def ready(self):
         import sentinel.signals
+        from sentinel.utils import is_redis_available
 
-        if not is_redis_available():
-            raise RuntimeWarning(
-                "Redis service does not appear to be running, tasks will not be run!"
+        if not is_redis_available(timeout=60):
+
+            logger.error(
+                "!!!!!!!!!!!!!!!!!!!!!!!!Redis service does not appear to be running, tasks will not be run!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             )
