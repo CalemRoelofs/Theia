@@ -27,12 +27,11 @@ The basic idea is to have an application in place that not only tracks what infr
 
 ## Usage
 ```bash
-docker-compose build
-docker-compose up -d
+docker-compose up -d --build
 ```  
 
 The server will run on port 8080 by default but this can be changed in the `docker-compose.yml` file.  
-If you want to use the Django Admin Panel, to set up a superuser find the id of the container and run `docker exec -it container_id python manage.py createsuperuser`.  
+If you want to use the Django Admin Panel, to set up a superuser find the id of the container and run `docker exec -it {container_id} python manage.py createsuperuser`.  
   
 ## To-Do  
 - Test CRUD validations for:  
@@ -40,16 +39,15 @@ If you want to use the Django Admin Panel, to set up a superuser find the id of 
     - Webhooks  
 
 - Implement:  
-    - Exporting changelog history for a server  
-    - Viewing alert logs  
+    - Exporting changelog history for a server   
   
 - Bugs:  
     - Messages aren't rendering in Teams for some reason despite being returned 200  
   
 - Nice to have:  
-    - Format messages properly  
-    - Add a basic login system  
-    - Allow users to see the profile history for a server at a given date/time.  
-    - Figure out what else to put in the top navbar.  
-    - Add pagination for changelogs and alertlogs  
-    - Write a nicer and more descriptive README
+    - Format messages properly    
+    - Add a basic login system   
+    - Allow users to see the profile history for a server at a given date/time  
+    - Figure out what else to put in the top navbar   
+    - Add pagination for changelogs and alertlogs    
+    - Write a nicer and more descriptive README  
