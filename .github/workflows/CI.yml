@@ -31,7 +31,7 @@ jobs:
         run: poetry run black . --check
         
       - name: Install Nmap
-        run: apt-get install nmap -y
+        run: sudo apt-get install nmap -y
 
       - name: Test with pytest
         env:
