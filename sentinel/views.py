@@ -154,7 +154,7 @@ def changelog_view():
     pass
 
 
-def alerts_overview(request):
+def alerts_overview(request, errors=None):
     endpoints = AlertEndpoint.objects.all()
     context = {
         "page_title": "Alerts Overview",
@@ -165,11 +165,14 @@ def alerts_overview(request):
         "alert_count": AlertEndpoint.objects.count(),
         "alert_endpoints": endpoints,
         "contact_groups": ContactGroup.objects.all(),
-        "endpoint_types": ENDPOINT_TYPE_CHOICES,
+        "services": ENDPOINT_TYPE_CHOICES,
         "add_endpoint_form": AlertEndpointForm(),
         "add_group_form": ContactGroupForm(),
         "debug_flag": settings.DEBUG,
     }
+    if errors:
+        logger.error(errors)
+        context["form_errors"] == errors
     return render(request, "sentinel/alerts_overview.html", context=context)
 
 
