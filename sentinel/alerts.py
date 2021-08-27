@@ -16,7 +16,7 @@ def _discord_notification(
     """Private function to send a message to a Discord wehhook
 
     Args:
-        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "discord")
+        endpoint (AlertEndpoint): The alert endpoint (of service "discord")
         changelog (ProfileChangelog): The changelog to send the alert for.
         message (str): The message to send to the webhook.
 
@@ -34,7 +34,7 @@ def _discord_notification(
         },
     }
 
-    response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
+    response = requests.post(endpoint.url, json=payload, headers=headers)
     AlertLog(
         server=changelog.server,
         alert_endpoint=endpoint.name,
@@ -50,7 +50,7 @@ def _msteams_notification(
     """Private function to send a message to a Microsoft Teams wehhook
 
     Args:
-        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "msteams")
+        endpoint (AlertEndpoint): The alert endpoint (of service "msteams")
         changelog (ProfileChangelog): The changelog to send the alert for.
         message (str): The message to send to the webhook.
 
@@ -63,7 +63,7 @@ def _msteams_notification(
         "attachments": [
             {
                 "contentType": "application/vnd.microsoft.card.adaptive",
-                "contentUrl": endpoint.endpoint_value,
+                "contentUrl": endpoint.url,
                 "content": {
                     "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                     "type": "AdaptiveCard",
@@ -132,7 +132,7 @@ def _msteams_notification(
             }
         ],
     }
-    response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
+    response = requests.post(endpoint.url, json=payload, headers=headers)
     AlertLog(
         server=changelog.server,
         alert_endpoint=endpoint.name,
@@ -148,7 +148,7 @@ def _slack_notification(
     """Private function to send a message to a Slack wehhook
 
     Args:
-        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "slack")
+        endpoint (AlertEndpoint): The alert endpoint (of service "slack")
         changelog (ProfileChangelog): The changelog to send the alert for.
         message (str): The message to send to the webhook.
 
@@ -163,7 +163,7 @@ def _slack_notification(
         "icon_emoji": ":bell:",
     }
 
-    response = requests.post(endpoint.endpoint_value, json=payload, headers=headers)
+    response = requests.post(endpoint.url, json=payload, headers=headers)
 
     AlertLog(
         server=changelog.server,
@@ -181,7 +181,7 @@ def _telegram_notification(
     """Private function to send a message to a Telegram wehhook
 
     Args:
-        endpoint (AlertEndpoint): The alert endpoint (of endpoint_type "telegram")
+        endpoint (AlertEndpoint): The alert endpoint (of service "telegram")
         changelog (ProfileChangelog): The changelog to send the alert for.
         message (str): The message to send to the webhook.
 
@@ -190,7 +190,7 @@ def _telegram_notification(
     """
     url_encoded_message = urllib.parse.quote(message)
 
-    response = requests.get(endpoint.endpoint_value + url_encoded_message)
+    response = requests.get(endpoint.url + url_encoded_message)
 
     AlertLog(
         server=changelog.server,
@@ -206,15 +206,15 @@ def send_alert(
     endpoint: AlertEndpoint, changelog: ProfileChangelog, message: str
 ) -> int:
 
-    if endpoint.endpoint_type == "discord":
+    if endpoint.service == "discord":
         return _discord_notification(endpoint, changelog, message)
-    elif endpoint.endpoint_type == "msteams":
+    elif endpoint.service == "msteams":
         return _msteams_notification(endpoint, changelog, message)
-    elif endpoint.endpoint_type == "slack":
+    elif endpoint.service == "slack":
         return _slack_notification(endpoint, changelog, message)
-    elif endpoint.endpoint_type == "telegram":
+    elif endpoint.service == "telegram":
         return _telegram_notification(endpoint, changelog, message)
     else:
         raise RuntimeError(
-            f"{endpoint}: {endpoint.endpoint_type} is not a valid endpoint type!"
+            f"{endpoint}: {endpoint.service} is not a valid endpoint type!"
         )

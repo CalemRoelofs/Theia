@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from django.utils.timezone import now
-from django.views.generic import ListView
 from django_celery_beat.models import PeriodicTask
 
 from sentinel.constants import ENDPOINT_TYPE_CHOICES
 from sentinel.constants import SCAN_FREQUENCY_CHOICES
+from sentinel.validators import webhook_validator
 
 
 class AlertEndpoint(models.Model):
@@ -14,7 +14,7 @@ class AlertEndpoint(models.Model):
         verbose_name_plural = "Alert Endpoints"
 
     name = models.CharField("Name", max_length=512, null=False, blank=False)
-    endpoint_type = models.CharField(
+    service = models.CharField(
         "Endpoint Type",
         max_length=30,
         null=False,
@@ -22,8 +22,12 @@ class AlertEndpoint(models.Model):
         choices=ENDPOINT_TYPE_CHOICES,
         default="discord",
     )
-    endpoint_value = models.CharField(
-        "Webhook URL/Email Address", max_length=512, null=False, blank=False
+    url = models.CharField(
+        "Webhook URL/Email Address",
+        max_length=512,
+        null=False,
+        blank=False,
+        validators=[webhook_validator],
     )
 
     def __str__(self):

@@ -17,7 +17,7 @@
                         </button>
                     </div>
                 </div>
-                {% for et in endpoint_types %}
+                {% for et in services %}
                 <hr class="py-0 my-0">
                 <label for="{{ et.0 }}-table"
                     class="bg-primary text-light col-sm-12 col-form-label col-form-label-lg">{{ et.1 }}
@@ -32,10 +32,10 @@
                     </thead>
                     <tbody>
                         {% for endpoint in alert_endpoints %}
-                        {% if endpoint.endpoint_type == et.0 %}
+                        {% if endpoint.service == et.0 %}
                         <tr>
                             <td>{{ endpoint.name}}</td>
-                            <td colspan="4">{{ endpoint.endpoint_value }}</td>
+                            <td colspan="4">{{ endpoint.url }}</td>
                             <td>
                                 {% if debug_flag %}
                                 <button class="btn btn-link btn-warning" id="debug_button" name="{{ endpoint.name }}"
