@@ -22,9 +22,7 @@ class ServerForm(forms.ModelForm):
         self.fields["scan_frequency_value"] = forms.IntegerField(
             min_value=1, max_value=2147483646, initial=10
         )
-        self.fields["ip_address"] = forms.CharField(
-            validators=[validators.ip_address_validators]
-        )
+        self.fields["ip_address"] = forms.CharField()
         self.fields["domain_name"] = forms.CharField(
             validators=[validators.URLValidator]
         )

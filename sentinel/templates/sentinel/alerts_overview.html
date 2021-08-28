@@ -15,6 +15,9 @@
                             data-target="#add_endpoint_modal">
                             <i class="la la-plus la-lg"> </i> Add New Endpoint
                         </button>
+                        <a class="btn btn-primary pull-right mr-3" href="{% url 'alert_logs' %}">
+                            <i class="la la-search la-lg"> </i> View Logs
+                        </a>
                     </div>
                 </div>
                 {% for et in services %}
