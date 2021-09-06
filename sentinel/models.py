@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import uuid
-
 from django.db import models
 from django.utils.timezone import now
 from django_celery_beat.models import PeriodicTask
@@ -55,15 +53,14 @@ class Server(models.Model):
         verbose_name = "Server"
         verbose_name_plural = "Servers"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("Name", unique=True, blank=False, max_length=255)
     ip_address = models.GenericIPAddressField("IP Address", unique=True, blank=False)
     domain_name = models.CharField(
         "Fully Qualified Domain Name", blank=True, max_length=255
     )
-    description = models.CharField("Description", max_length=512, null=True, blank=True)
-    developer = models.CharField("Developer", max_length=255, null=True, blank=True)
-    sysadmin = models.CharField("Sysadmin", max_length=255, null=True, blank=True)
+    description = models.CharField("Description", max_length=512)
+    developer = models.CharField("Developer", max_length=255)
+    sysadmin = models.CharField("Sysadmin", max_length=255)
     date_added = models.DateTimeField("Date Added", default=now, editable=False)
     date_last_checked = models.DateTimeField("Last Checked", default=now)
     contact_group = models.ForeignKey(

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import uuid
-
 from django.urls import path
 
 from . import views
@@ -11,8 +9,8 @@ urlpatterns = [
     path("servers/create", views.create_server, name="create_server"),
     path("server/edit", views.edit_server, name="edit_server"),
     path("server/delete", views.delete_server, name="delete_server"),
-    path("servers/<uuid:server_id>/", views.server_view, name="server_view"),
-    path("servers/<uuid:server_id>/logs", views.server_logs, name="server_logs"),
+    path("servers/<int:server_id>/", views.server_view, name="server_view"),
+    path("servers/<int:server_id>/logs", views.server_logs, name="server_logs"),
     path("changelogs/", views.changelog_overview, name="changelog_overview"),
     path("changelogs/ack", views.acknowledge_changelog, name="ack_changelog"),
     path("alerts/", views.alerts_overview, name="alerts_overview"),

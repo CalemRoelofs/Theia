@@ -86,8 +86,6 @@ def create_server(request):
             new_server.serverprofile.save()
             manage_server_tasks(new_server)
             return redirect("server_view", server_id=new_server.id)
-        else:
-            logger.error(form.errors)
     return redirect("server_overview")
 
 
@@ -152,6 +150,10 @@ def acknowledge_changelog(request):
     return JsonResponse({"message": "Acknowleged"})
 
 
+def changelog_view():
+    pass
+
+
 def alerts_overview(request, errors=None):
     endpoints = AlertEndpoint.objects.all()
     context = {
@@ -176,22 +178,16 @@ def alerts_overview(request, errors=None):
 
 def send_test_alert(request):
     data = json.loads(request.read().decode("utf-8"))
-    server = Server(
-        name="Debug Server",
-        ip_address="127.0.0.1",
-        check_open_ports=False,
-        check_security_headers=False,
-        check_ssl_certs=False,
-        check_dns_records=False,
-        check_latency=False,
-    )
-    server.save()
+    server = Server.objects.get(id=1)
 
     try:
         endpoint = get_object_or_404(AlertEndpoint, id=data["id"])
     except Http404:
         return JsonResponse({"message": f"Could not find id: {id}"})
 
+    old_name = server.name
+    server.name = "Debug Server"
+    server.save()
     test_changelog = ProfileChangelog(
         server=server,
         date_modified=now(),
@@ -210,7 +206,8 @@ def send_test_alert(request):
     """
 
     status_code = send_alert(endpoint, test_changelog, message)
-    server.delete()
+    server.name = old_name
+    server.save()
     return JsonResponse({"message": f"{status_code}"})
 
 

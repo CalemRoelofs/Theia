@@ -87,7 +87,7 @@ def manage_server_tasks(server: Server):
     interval, _ = IntervalSchedule.objects.get_or_create(
         every=server.scan_frequency_value, period=server.scan_frequency_period
     )
-    args = json.dumps([str(server.id)])
+    args = json.dumps([server.id])
 
     if server.check_open_ports:
         open_ports_task = PeriodicTask(
